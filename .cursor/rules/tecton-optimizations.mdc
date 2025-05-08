@@ -1,0 +1,30 @@
+---
+description: Follow this rule if you're trying to optimize an existing Tecton Feature View
+globs: 
+alwaysApply: false
+---
+
+# Tecton FeatureView Optimization rules
+
+## Use Tecton Aggregates Instead of Custom Aggregations When Possible
+
+If a BatchFeatureView (BFV) uses custom aggregations, first check if they can be expressed using Tecton’s built-in Aggregate functions (listed below). If **all** custom aggregations can be mapped to Tecton’s Aggregate class, move them out of the transformation function and define them using Aggregate. This improves efficiency and avoids the need for incremental_materialization.
+
+If **only some** aggregations can be expressed using Aggregate, factor those into a separate FeatureView.
+
+If the aggregation **cannot** be expressed with Aggregate, use incremental_materialization = True.
+
+Built-in Aggregates:
+approx_count_distinct(precision), approx_percentile(percentile, precision), count, first_distinct(n), first(n), last_distinct(n), last(n), max, mean, min, stddev_pop, stddev_samp, sum, var_pop, var_samp
+
+Important:
+BFVs using Aggregate features should always set incremental_materialization = False for optimal backfill performance.
+
+
+If you switch a custom aggregation FV to a FV that uses Aggregates and unit tests are affect you must make sure to review the rules for writing Tecton unit tests. They will help you modify the unit test.
+
+If you switch to an Aggregation feature, you must never change the `mode` of the FV. Just leave it as is.
+
+If you switch to an Aggregation feature, you MUST look at the feature engineering rules. Specifically, take a look at how you reference data sources and look for opportunities to turn a previously unfiltered data source into one that's now filtered by Tecton.
+
+Critical: Before switching to an Aggregate feature, make sure look at examples of Tecton Aggregation features (available via tools) so you know what the right syntax looks like.

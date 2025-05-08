@@ -1,0 +1,96 @@
+---
+description: Rules to follow when creating or modifying Tecton features
+globs: 
+alwaysApply: false
+---
+
+# Rules to follow when you create a feature
+
+- You must break down the implementation of features into stages:
+    - First, fetch and review relevant rules
+    - Then, search for Tecton examples and the Tecton API reference
+    - Look at the existing feature repository to see if you can reuse Tecton Entities and Data Sources. If you find good fits, confirm with the user that they want to reuse.
+    - Then, implement the solution
+- CRITICAL: Before writing or editing feature code
+   – You MUST call mcp_tecton_query_example_code_snippet_index_tool to look for relevant code snippets
+   - You MUST then think about all the available Tecton classes that you will use to implement the feature
+   – You MUST then call mcp_query_tecton_sdk_reference_tool to look at the exact definition of all the Tecton classes and functions you're planning to use
+   - You MUST finally come up with a plan that explain which parameters of BatchFeatureView, StreamFeatureView or RealTimeFeatureView you're planning to use based on the SDK reference
+- When you create a feature that aggregates over time windows of 60 minutes or less, always default to a StreamFeatureView unless explicitly specified otherwise
+- You must never combine `Attribute` and `Aggregate` features in the same FeatureView
+- In a feature transformation, you must never reference the current date time using a function like SQL `CURRENT_DATE()` or their equivalents in PySpark or Python. Instead, you must use the Tecton provided `end_time` that you get from the context parameter which is passed into the transformation function.
+- Be very thoughtful when you change a customer provided SQL statement. Make sure you don't remove anything that may be relevant to the feature transformation.
+- If you create a feature that reads from Snowflake, make sure to use a `BatchSource` whose `batch_config`is set to an instance of a `SnowflakeConfig` 
+- CRITICAL: If you define a BatchFeatureView that's using a GROUP BY statement (or a similar grouping mechanism) in its transformation function, **you must** set the `incremental_backfills` parameter to True if you 
+- If you set `incremental_backfills` to True, you must make sure that all sources in the `sources` parameter are referenced by calling the `unfiltered()` function on them. This ensures that Tecton doesn't filter the data sources by their timestamp before invoking the FeatureView function. You will be responsible for filtering the data manually in the FV function.
+- CRITICAL: If a user provides a SQL query for a feature: You MUST NOT translate the SQL logic into another language or API (e.g., PySpark DataFrames, Pandas) unless the user explicitly asks you to 'translate to PySpark' or 'rewrite using PySpark DataFrames'. Stick to SQL - it's ok to translate from say Snowfalke SQL to Spark SQL if necessary.
+- CRITICAL: Before using a class from the Tecton SDK, make sure you read Tecton's API Reference and know what parameters are required and which ones are optional so you're not hallucinating non-existing parameters and so you're not omitting required parameters.
+- You must never have a Python-comment (prefixed with a "#") in a SQL statement
+- 
+
+## How to reference data sources in SQL-based feature transformations
+
+- CRITICAL: Every table referenced in your SQL (via FROM or JOIN) must be declared as a Data Source and included in the sources parameter.
+- When you build a batch feature view and set the `sources` parameter, always reference a source by calling `unfiltered()` on the `BatchSource` class instance you're trying to reference a dimension table. If you reference a fact table that is timestamped, you don't need to call unfiltered UNLESS you set `incremental_backfills` to True.
+- CRITICAL: When generating a SQL string inside a feature view function, you must reference the data source parameters that are passed into the function as arguments. These parameters correspond to the list of sources provided in the @batch_feature_view decorator. Inside the SQL string, use Python f-string syntax (e.g., {source}) to refer to each source. Do not hardcode table names directly into the SQL string. Instead, always use the parameter names from the function signature, since they may represent filtered, aliased, or transformed versions of the original sources.
+
+Example:
+```python
+# Define data sources
+transactions = BatchSource( # Fact table
+    ...
+    batch_config=HiveConfig(..., timestamp_field="timestamp"), # Timestamped
+)
+products = BatchSource(...) # Dimension table
+stores = BatchSource(...) # Dimension table
+
+@batch_feature_view(
+    sources=[transactions, products.unfiltered(), stores.unfiltered()],  # All tables used in SQL must be here
+    # Other parameters...
+)
+def feature_view_function(transactions, products, stores, context=materialization_context()):
+    return f"""
+    SELECT * FROM {transactions} t
+    JOIN {products} p ON t.product_id = p.product_id
+    JOIN {stores} s ON t.store_id = s.store_id
+    """
+```
+
+# Rules to follow for BatchFeatureViews and StreamFeatureViews
+
+- The only supported values for the `mode` parameter are "pyspark" and "spark_sql" because you're working on a Tecton cluster that supports only Spark-based Batch and Stream Feature Views. Rift is not supported.
+
+# Rules for features that use the Aggregation Engine and define features using the `Aggregate` class
+
+- Never set the `incremental_backfill` parameter to True for FeatureViews who define a feature using the `Aggregate` class
+- Built-in supported Aggregates:
+approx_count_distinct(precision), approx_percentile(percentile, precision), count, first_distinct(n), first(n), last_distinct(n), last(n), max, mean, min, stddev_pop, stddev_samp, sum, var_pop, var_samp
+
+# Rules to follow when you're done creating a feature
+
+- Validate your implementation by ensuring you followed all relevant Tecton rules
+- You must validate your Tecton implementation by running `tecton plan` against the feature repository directory
+
+- Always explicitly verify that you followed the rules in this document. Tell the user about every rule you've successfully or not successfully validated.
+- You must make sure your cwd is a Tecton repository before running `tecton plan`. You can identify a repository by looking for a `.tecton` file. 
+- If you find multiple feature repositories, ask the user which one to use
+- Do not create a new tecton feature repo unless the user explicitly asks you.
+- Summarize your work to the user and explicitly tell the user what FeatureViews you've created, how far back they will be backfilled and what batch schedule is set.
+- ONLY once `tecton plan` shows successfully validated your feature implementation, ask the user if you should create a unit test for the feature
+
+- You must never call `tecton apply` unless the user explicitly asks you to do so.
+- You must never call `tecton init` unless the user explicitly asks you to do so.
+- If you're not sure what to do and have multiple options, ask the user.
+
+# Rules to follow when you create a new Tecton Entity
+
+Remember that join keys must be wrapped in a `Field` class. Example:
+
+```python
+from tecton import Entity
+from tecton.types import Field, String
+
+customer = Entity(name="Customer", join_keys=[Field("customer_id", String)])
+```
+
+
