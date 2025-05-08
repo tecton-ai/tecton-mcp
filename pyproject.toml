@@ -1,0 +1,65 @@
+[project]
+name = "tecton_mcp"
+version = "0.1.4"
+description = "[private preview] Tecton MCP"
+authors = [{ name = "Tecton, Inc.", email = "support@tecton.ai" }]
+dependencies = [
+    "pandas>=2.2.1",
+    "typing_extensions>=4.5",
+    "lancedb==0.18.0",
+    "langchain-core==0.3.47",
+    "langchain==0.3.21",
+    "langchain-community>=0.3.0",
+    "langchain-huggingface>=0.0.3",
+    "sentence-transformers>=2.2.0",
+    "tecton==1.1.5",
+    "langchain-openai==0.3.9",
+    "openai==1.67.0",
+    "mcp[cli]",
+    "debugpy>=1.8.11",
+    "pyarrow==15.0.2",
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "Tecton Proprietary" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: Other/Proprietary License",
+]
+
+[project.urls]
+Homepage = "https://tecton.ai"
+Documentation = "https://docs.tecton.ai"
+
+[project.scripts]
+tecton_mcp = "tecton_mcp.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tecton_mcp"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+managed = true
+dev-dependencies = [
+    "setuptools",
+    "wheel",
+    "pre-commit>=3.7.1",
+    "pylint>=3.2.6",
+]
+
+[tool.uv.workspace]
+members = ["demo/marshmallow-demo"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+addopts = "-p pytest_cov -vvv --cov=src --cov-report=term-missing:skip-covered"
