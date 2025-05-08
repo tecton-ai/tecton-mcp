@@ -5,8 +5,6 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 
 > ℹ️ **Info**: This guide will walk you through setting up the Tecton MCP server with **this repository** and configuring your **feature repository** to use it while developing features with Tecton.
 
-> ℹ️ **Info**: This Co-Pilot is in private preview.
-
 ## Table of Contents
 
 - [Quick Start](#quick-start)
