@@ -15,6 +15,8 @@ from tecton_mcp.tools.api_reference_tools import get_full_sdk_reference
 from tecton_mcp.tools.example_code_snippet_tools import load_example_code_snippet_index
 from tecton_mcp.embed.meta import get_embedding_model
 from tecton_mcp.utils.sdk_introspector import get_sdk_definitions
+import tecton
+from tecton._internals.sdk_decorators import sdk_public_method
 
 # Set up JSON logging
 class JsonFormatter(logging.Formatter):
@@ -80,6 +82,79 @@ class AppContext:
     pass
 
 
+@asynccontextmanager
+async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
+    """Manage application lifecycle with type-safe context."""
+    # Initialize on startup
+    try:
+        # Dynamic registration moved outside lifespan
+        yield AppContext()
+    finally:
+        # Cleanup on shutdown
+        pass
+
+
+# Pass lifespan to server
+mcp = FastMCP("Tecton", lifespan=app_lifespan, instructions=INSTRUCTIONS)
+
+logger.info("Tecton MCP Server initializing...")
+
+# query_api_reference_index = load_api_reference_index()
+query_example_code_snippet_index = load_example_code_snippet_index()
+logger.info(f"Loaded persisted data using embedding model: {get_embedding_model()}")
+
+
+@mcp.tool()
+@sdk_public_method
+def query_example_code_snippet_index_tool(query, ctx: Context) -> str:
+    """
+    Finds relevant Tecton code examples using a vector database.
+    It is always helpful to query the examples retriever before generating Tecton code.
+
+    Input query examples:
+    - "examples of an Entity"
+    - "examples of a KinesisConfig"
+    - "examples of a KafkaConfig"
+    - "examples of a batch feature view"
+    - "examples of a count distinct aggregation feature view"
+    - "examples of a percentile aggregation feature view"
+    - "examples of a stream feature view"
+    - "examples of an aggregation stream feature view"
+    - "examples of a realtime feature view"
+    - "examples of a realtime feature view that transforms data from another feature view"
+    - "examples of a fraud feature"
+    - "examples of a recsys case"
+    - "examples of a test"
+
+    The output will be a collection of python code examples that use Tecton to implement features, ranked by relevance.
+    """
+    ctx.info(f"Received query: {query}")
+    return query_example_code_snippet_index(query=query)
+
+
+@mcp.tool()
+@sdk_public_method
+def get_full_tecton_sdk_reference_tool(ctx: Context) -> str:    
+    """Fetches the full Tecton SDK reference. 
+    Use this only if you need to get the full SDK reference for all classes/functions.
+    If you care only about a subset, use the `query_tecton_sdk_reference_tool` tool instead.
+    """
+
+    try:
+        return get_full_sdk_reference()
+    except Exception as e:
+        ctx.error(f"[Static Debug] Error calling get_full_sdk_reference: {e}")
+        return f"Error: {e}"
+
+
+# --- Register dynamic tools here ---
+@sdk_public_method
+def query_tecton_sdk_reference_tool(class_names: List[str], ctx: Context) -> str:
+    """The docstring will be generated dynamically based on the available classes/functions in the _create_dynamic_sdk_reference_tool function below."""
+    ctx.info(f"Fetching Tecton SDK reference for: {class_names}")
+    # Directly call the function from api_reference_tools
+    return get_full_sdk_reference(filter_list=class_names)
+
 # Helper function to create the dynamic tool
 def _create_dynamic_sdk_reference_tool() -> tuple[Callable, str, str]:
     """Fetches SDK definitions and creates the tool registration details."""
@@ -109,38 +184,9 @@ Available classes/functions:
 {available_classes_str}
 """
 
-    # Define the actual tool implementation function dynamically
-    def tool_impl(class_names: List[str], ctx: Context) -> str:
-        """Dynamically generated tool implementation."""
-        ctx.info(f"Fetching Tecton SDK reference for: {class_names}")
-        # Directly call the function from api_reference_tools
-        return get_full_sdk_reference(filter_list=class_names)
-
-    return tool_impl, "query_tecton_sdk_reference_tool", dynamic_docstring
+    return query_tecton_sdk_reference_tool, "query_tecton_sdk_reference_tool", dynamic_docstring
 
 
-@asynccontextmanager
-async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
-    """Manage application lifecycle with type-safe context."""
-    # Initialize on startup
-    try:
-        # Dynamic registration moved outside lifespan
-        yield AppContext()
-    finally:
-        # Cleanup on shutdown
-        pass
-
-
-# Pass lifespan to server
-mcp = FastMCP("Tecton", lifespan=app_lifespan, instructions=INSTRUCTIONS)
-
-logger.info("Tecton MCP Server initializing...")
-
-# query_api_reference_index = load_api_reference_index()
-query_example_code_snippet_index = load_example_code_snippet_index()
-logger.info(f"Loaded persisted data using embedding model: {get_embedding_model()}")
-
-# --- Register dynamic tools here ---
 tool_func, tool_name, tool_description = _create_dynamic_sdk_reference_tool()
 # Try positional arguments based on the error message
 mcp.add_tool(
@@ -149,86 +195,6 @@ mcp.add_tool(
     description=tool_description
 )
 # --- End of dynamic tool registration ---
-
-@mcp.tool()
-def query_example_code_snippet_index_tool(query, ctx: Context) -> str:
-    """
-    Finds relevant Tecton code examples using a vector database.
-    It is always helpful to query the examples retriever before generating Tecton code.
-
-    Input query examples:
-    - "examples of an Entity"
-    - "examples of a KinesisConfig"
-    - "examples of a KafkaConfig"
-    - "examples of a batch feature view"
-    - "examples of a count distinct aggregation feature view"
-    - "examples of a percentile aggregation feature view"
-    - "examples of a stream feature view"
-    - "examples of an aggregation stream feature view"
-    - "examples of a realtime feature view"
-    - "examples of a realtime feature view that transforms data from another feature view"
-    - "examples of a fraud feature"
-    - "examples of a recsys case"
-    - "examples of a test"
-
-    The output will be a collection of python code examples that use Tecton to implement features, ranked by relevance.
-    """
-    ctx.info(f"Received query: {query}")
-    return query_example_code_snippet_index(query=query)
-
-
-@mcp.tool()
-def get_full_tecton_sdk_reference_tool(ctx: Context) -> str:    
-    """Fetches the full Tecton SDK reference. 
-    Use this only if you need to get the full SDK reference for all classes/functions.
-    If you care only about a subset, use the `query_tecton_sdk_reference_tool` tool instead.
-    """
-
-    try:
-        return get_full_sdk_reference()
-    except Exception as e:
-        ctx.error(f"[Static Debug] Error calling get_full_sdk_reference: {e}")
-        return f"Error: {e}"
-
-
-# Restore dynamic tool helper function
-def _create_dynamic_sdk_reference_tool() -> tuple[Callable, str, str]:
-    """Fetches SDK definitions and creates the tool registration details."""
-    logger.info("Fetching Tecton SDK definitions for dynamic tool registration...")
-    _details, all_defs = get_sdk_definitions() # Use _details as details are not needed here
-    logger.info(f"Found {len(all_defs)} Tecton SDK definitions.")
-
-    # Construct dynamic docstring
-    available_classes_str = ", ".join(sorted(all_defs))
-    dynamic_docstring = f"""Fetches the Tecton SDK reference for a specific list of classes/functions.
-
-**IMPORTANT:** The `class_names` list **MUST** only contain names from the 'Available classes/functions' list below.
-Providing any names *not* in this list will result in an error or empty output.
-
-Use this tool when you need information about specific Tecton components from the allowed list.
-
-Output Format:
-- Starts with a bulleted list of the found public classes/functions matching the query.
-- Followed by details for each item, including:
-    - Type (Class/Function)
-    - Name
-    - Recommended import path (e.g., `tecton` or `tecton.types`)
-    - The definition header (e.g., `class FeatureView(...)` or `def batch_feature_view(...)`)
-    - The full docstring.
-
-Available classes/functions:
-{available_classes_str}
-"""
-
-    # Define the actual tool implementation function dynamically
-    def tool_impl(class_names: List[str], ctx: Context) -> str:
-        """Dynamically generated tool implementation."""
-        ctx.info(f"Fetching Tecton SDK reference for: {class_names}")
-        # Directly call the function from api_reference_tools
-        return get_full_sdk_reference(filter_list=class_names)
-
-    return tool_impl, "query_tecton_sdk_reference_tool", dynamic_docstring
-
 
 logger.info("Tecton MCP Server initialized")
 
