@@ -13,9 +13,9 @@ from typing import AsyncIterator, List, Callable, Any, Dict, Set
 
 from tecton_mcp.tools.api_reference_tools import get_full_sdk_reference
 from tecton_mcp.tools.example_code_snippet_tools import load_example_code_snippet_index
+from tecton_mcp.tools.documentation_tools import load_documentation_index
 from tecton_mcp.embed.meta import get_embedding_model
 from tecton_mcp.utils.sdk_introspector import get_sdk_definitions
-import tecton
 from tecton._internals.sdk_decorators import sdk_public_method
 
 # Set up JSON logging
@@ -99,9 +99,11 @@ mcp = FastMCP("Tecton", lifespan=app_lifespan, instructions=INSTRUCTIONS)
 
 logger.info("Tecton MCP Server initializing...")
 
-# query_api_reference_index = load_api_reference_index()
 query_example_code_snippet_index = load_example_code_snippet_index()
-logger.info(f"Loaded persisted data using embedding model: {get_embedding_model()}")
+logger.info(f"Loaded example code snippet index using embedding model: {get_embedding_model()}")
+
+query_documentation_index = load_documentation_index()
+logger.info(f"Loaded documentation index using embedding model: {get_embedding_model()}")
 
 
 @mcp.tool()
@@ -131,6 +133,31 @@ def query_example_code_snippet_index_tool(query, ctx: Context) -> str:
     ctx.info(f"Received query: {query}")
     return query_example_code_snippet_index(query=query)
 
+@mcp.tool()
+@sdk_public_method
+def query_documentation_index_tool(query, ctx: Context) -> str:
+    """
+    Retrieves and formats Tecton documentation snippets based on a query.
+    Each snippet includes the TECTON DOCUMENTATION URL (Source URL), 
+    the section header, and the relevant text chunk.
+
+    Tell the user what documentation URL they can open up to get more information.
+
+    Input query examples:
+    - "How do I unit test a Feature View?"
+    - "What are Entities in Tecton?"
+    - "Explain Batch Feature Views."
+    - "How to connect to a Kafka data source?"
+    - "Show me how to construct training data."
+    - "Tutorial for building realtime features."
+    - "How does `tecton apply` work?"
+    - "Information about Tecton data types."
+    - "What is a Feature Service?"
+    - "Scaling the online feature server."
+    - "Monitoring materialization jobs."
+    """
+    ctx.info(f"Received query: {query}")
+    return query_documentation_index(query=query)
 
 @mcp.tool()
 @sdk_public_method
