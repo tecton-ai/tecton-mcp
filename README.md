@@ -36,7 +36,7 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
    uv --directory <path-to-your-local-clone> run mcp run src/tecton_mcp/mcp_server/server.py
    ```   
 
-   If you see a message like `{"timestamp": "2025-04-30 12:50:58,343", "level": "INFO", "message": "Tecton MCP Server initialized", "module": "server", "function": "<module>", "line": 233}` it means that everything is working as expected. You can now exit the command and go to the next step.
+   If you see a message like `{"timestamp": "2025-04-30 12:50:58,343", "level": "INFO", "message": "Tecton MCP Server initialized", "module": "server", "function": "<module>", "line": 233}` it means that everything is working as expected. **Important:** Keep this terminal window open and the server running. The MCP server needs to stay active while you're using Cursor.
 
 4. Configure Cursor (or any other MCP client) with the MCP server (see below)
 
@@ -88,7 +88,16 @@ Add Tecton as an MCP server. You can use the following config as a starting poin
 
 ### Add Cursor rules
 
-Copy the cursorrules from this repository's [`.cursor/rules` folder](https://github.com/tecton-ai/tecton-mcp/tree/main/.cursor/rules) into the `.cursor/rules` folder of your feature repository.
+Copy the cursorrules from this repository's [`.cursor/rules` folder](https://github.com/tecton-ai/tecton-mcp/tree/main/.cursor/rules) into the `.cursor/rules` folder of your [feature repository](https://docs.tecton.ai/docs/setting-up-tecton/development-setup/creating-a-feature-repository):
+
+```bash
+# Create the .cursor/rules directory structure in your feature repository
+mkdir -p <path-to-your-feature-repo>/.cursor/rules
+
+# Then copy the rules
+cp -r <path-to-your-local-clone>/.cursor/rules/* <path-to-your-feature-repo>/.cursor/rules/
+```
+
 
 ### Tecton Login
 
