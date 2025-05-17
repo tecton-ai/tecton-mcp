@@ -88,7 +88,7 @@ Add Tecton as an MCP server. You can use the following config as a starting poin
 
 ### Add Cursor rules
 
-Copy the cursorrules from `.cursor/rules` into the `.cursor/rules` folder of your feature repository.
+Copy the cursorrules from this repository's [`.cursor/rules` folder](https://github.com/tecton-ai/tecton-mcp/tree/main/.cursor/rules) into the `.cursor/rules` folder of your feature repository.
 
 ### Tecton Login
 
