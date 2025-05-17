@@ -36,7 +36,7 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
    uv --directory <path-to-your-local-clone> run mcp run src/tecton_mcp/mcp_server/server.py
    ```   
 
-   If you see a message like `{"timestamp": "2025-04-30 12:50:58,343", "level": "INFO", "message": "Tecton MCP Server initialized", "module": "server", "function": "<module>", "line": 233}` it means that everything is working as expected. **Important:** Keep this terminal window open and the server running. The MCP server needs to stay active while you're using Cursor.
+   If you see a message like `{"timestamp": "2025-04-30 12:50:58,343", "level": "INFO", "message": "Tecton MCP Server initialized", "module": "server", "function": "<module>", "line": 233}` it means that everything is working as expected. This command verifies your local setup is correct - Cursor will automatically spawn the MCP server as a subprocess when needed. You can now exit the command and go to the next step.
 
 4. Configure Cursor (or any other MCP client) with the MCP server (see below)
 
