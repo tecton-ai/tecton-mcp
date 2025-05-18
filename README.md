@@ -8,6 +8,7 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [Use a Specific Tecton SDK Version](#use-a-specific-tecton-sdk-version)
 - [Set up Tecton with Cursor](#set-up-tecton-with-cursor)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
@@ -48,6 +49,41 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
    ```
 
 6. Launch Cursor and start developing features with Tecton's Co-Pilot in Cursor!
+
+## Use a Specific Tecton SDK Version
+
+By default, this repository installs the **latest pre-release** of the Tecton SDK (anything newer than `0.8.0a0`).  
+That means when you first run the MCP server, the newest _beta_ (or GA, if newer) build of Tecton will be fetched.
+
+If you need the tools to align with a **specific released version** of Tecton (for example `1.0.34` or `1.1.10`), follow these steps:
+
+1. **Pin the version in `pyproject.toml`.**  
+  Open `pyproject.toml` and replace the existing dependency line
+
+  ```toml
+  tecton>=0.8.0a0
+  ```
+
+  with the exact version you want, e.g.
+
+  ```toml
+  tecton==1.1.10   # or any >=1.0.x release
+  ```
+
+2. **Remove the existing lock-file.**  
+  Because `uv.lock` records the dependency graph, you must delete it so that `uv` can resolve the new Tecton version:
+
+  ```bash
+  rm uv.lock
+  ```
+
+3. **Re-generate the lock-file** by re-running **Step&nbsp;3** of the [Quick Start](#quick-start) section.  
+  (That command will download the pinned version and re-create `uv.lock`.)
+
+4. **Restart** the MCP server (or let Cursor restart it) so that the new version is loaded.  
+
+*Supported versions:* The tools currently support **Tecton ≥ 1.0.0**.  
+Code examples are not versioned yet – they always use the latest *stable* (non pre-release) SDK – however the **documentation** and **SDK reference** indices will now match the version you pinned.
 
 ## Tecton MCP Tools
 
