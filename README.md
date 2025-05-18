@@ -141,13 +141,9 @@ View this Loom to see how you can use the integration to build new features: htt
 
 ## How to Use Specific Tecton SDK Version
 
-By default, this repository installs the **latest pre-release** of the Tecton SDK.  
-That means when you first run the MCP server, the newest pre-release build of Tecton will be fetched.
+By default, this tool provides guidance for the latest pre-release of the Tecton SDK. If you need the tools to align with a specific released version of Tecton (for example `1.0.34` or `1.1.10`), follow these steps:
 
-If you need the tools to align with a **specific released version** of Tecton (for example `1.0.34` or `1.1.10`), follow these steps:
-
-1. **Pin the version in `pyproject.toml`.**  
-  Open `pyproject.toml` and replace the existing dependency line
+1. **Pin the version in `pyproject.toml`.** Open `pyproject.toml` and replace the existing dependency line
 
   ```toml
   dependencies = [
@@ -165,21 +161,18 @@ If you need the tools to align with a **specific released version** of Tecton (f
   ]
   ```
 
-2. **Remove the existing lock-file.**  
-  Because `uv.lock` records the dependency graph, you must delete it so that `uv` can resolve the new Tecton version:
+2. **Remove the existing lock-file.** Because `uv.lock` records the dependency graph, you must delete it so that `uv` can resolve the new Tecton version:
 
   ```bash
   cd <path-to-your-local-clone>
   rm uv.lock
   ```
 
-3. **Re-generate the lock-file** by re-running **Step&nbsp;3** (the `uv --directory` command) of the [Quick Start](#quick-start) section.  
-  (This will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
+3. **Re-generate the lock-file** by re-running **Step&nbsp;3** (the `uv --directory` command) of the [Quick Start](#quick-start) section. (This will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
 
 4. **Restart** Cursor so that the new Tecton version is loaded into the MCP virtual environment.   
 
-*Supported versions:* The tools currently support **Tecton ≥ 1.0.0**.  
-Code examples are not versioned yet – they always use the latest *stable* SDK – however the documentation and SDK reference indices will now match the version you pinned.
+*Supported versions:* The tools currently support Tecton ≥ 1.0.0. Code examples are not versioned yet – they always use the latest *stable* SDK – however the documentation and SDK reference indices will now match the version you've pinned.
 
 ## Troubleshooting
 
