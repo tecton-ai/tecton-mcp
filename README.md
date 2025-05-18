@@ -8,7 +8,10 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 ## Table of Contents
 
 - [Quick Start](#quick-start)
-- [Set up Tecton with Cursor](#set-up-tecton-with-cursor)
+- [Tecton MCP Tools](#tecton-mcp-tools)
+- [Architecture](#architecture)
+- [Setup Tecton with Cursor](#setup-tecton-with-cursor)
+- [How to Use Specific Tecton SDK Version](#how-to-use-specific-tecton-sdk-version)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
 
@@ -70,7 +73,7 @@ The overall flow for building features with Tecton MCP looks like:
 
 ![Tecton MCP Flow Chart](img/tecton_mcp_flow_chart.png)
 
-## Set up Tecton with Cursor
+## Setup Tecton with Cursor
 
 The following is tested with Cursor 0.48 and above
 
@@ -130,12 +133,46 @@ As of April 17th, the following is the stack ranked list of best performing Tect
 To make sure that your integration works as expected, ask the Cursor Agent a question like the following and make sure it's properly invoking your Tecton MCP tools:
 > Query Tecton's Examples Index and tell me something about BatchFeatureViews and how they differ from StreamFeatureViews. Also look at the SDK Reference.
 
-### Start Vibe Feature Engineering :-)
+### Start AI-Assisted Feature Engineering :-)
 
 Now you can go to your **Feature Repository** in Cursor and start using Tecton's Co-Pilot - directly integrated in Cursor.
 
-
 View this Loom to see how you can use the integration to build new features: https://www.loom.com/share/3658f665668a41d2b0ea2355b433c616
+
+## How to Use Specific Tecton SDK Version
+
+By default, this tool provides guidance for the latest pre-release of the Tecton SDK. If you need the tools to align with a specific released version of Tecton (for example `1.0.34` or `1.1.10`), follow these steps:
+
+1. **Pin the version in `pyproject.toml`.** Open `pyproject.toml` and replace the existing dependency line
+
+  ```toml
+  dependencies = [
+    # ... other dependencies ...
+    "tecton>=0.8.0a0"
+  ]
+  ```
+
+  with the exact version you want, e.g.
+
+  ```toml
+  dependencies = [
+    # ... other dependencies ...
+    "tecton==1.1.10"
+  ]
+  ```
+
+2. **Remove the existing lock-file.** Because `uv.lock` records the dependency graph, you must delete it so that `uv` can resolve the new Tecton version:
+
+  ```bash
+  cd <path-to-your-local-clone>
+  rm uv.lock
+  ```
+
+3. **Re-generate the lock-file** by re-running **Step&nbsp;3** (the `uv --directory` command) of the [Quick Start](#quick-start) section. (This will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
+
+4. **Restart** Cursor so that the new Tecton version is loaded into the MCP virtual environment.   
+
+*Supported versions:* The tools currently support Tecton ≥ 1.0.0. Code examples are not versioned yet – they always use the latest *stable* SDK – however the documentation and SDK reference indices will now match the version you've pinned.
 
 ## Troubleshooting
 
