@@ -8,9 +8,47 @@ from tecton_mcp.embed import VectorDB
 import tecton
 import pandas as pd
 
+# ---------------------------------------------------------------------------
+# Configuration for each documentation version we want to process. The output
+# database filename MUST match the resolution logic in
+# `documentation_tools._resolve_docs_db_path()`.
+# ---------------------------------------------------------------------------
+
+
 EMBED_MODEL = "sentence-transformers/multi-qa-MiniLM-L6-cos-v1"
-DOCS_PATH = os.path.expanduser("~/git/tecton-docs/docs")
-DOCS_BASE_URL = "https://docs.tecton.ai/docs/beta/"
+
+DOC_VERSIONS = [
+    {
+        "name": "latest",  # corresponds to >1.1.x (default / beta)
+        "db_filename": "tecton_docs.db",
+        "docs_path": os.path.expanduser("~/git/tecton-docs/docs"),
+        "base_url": "https://docs.tecton.ai/docs/beta/",
+    },
+    {
+        "name": "1.1",
+        "db_filename": "tecton_docs_1.1.db",
+        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.1"),
+        "base_url": "https://docs.tecton.ai/docs/",
+    },
+    {
+        "name": "1.0",
+        "db_filename": "tecton_docs_1.0.db",
+        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.0"),
+        "base_url": "https://docs.tecton.ai/docs/1.0",
+    },
+    {
+        "name": "0.9",
+        "db_filename": "tecton_docs_0.9.db",
+        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-0.9"),
+        "base_url": "https://docs.tecton.ai/docs/0.9",
+    },
+    {
+        "name": "0.8",
+        "db_filename": "tecton_docs_0.8.db",
+        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-0.8"),
+        "base_url": "https://docs.tecton.ai/docs/0.8",
+    },
+]
 
 
 def generate_doc_url(file_path: str, docs_root_path: str, base_url: str) -> str:
@@ -117,15 +155,29 @@ def main():
     examples = pd.read_parquet(os.path.join(FILE_DIR, "data", "examples.parquet")).to_dict(orient="records")
     build_and_save_example_code_snippet_index(examples, EMBED_MODEL)
     
-    # Get processed documentation chunks
-    documentation_chunks_data = process_documentation_files(DOCS_PATH, DOCS_BASE_URL)
-    
-    # Build LanceDB index using the new tool if data exists
-    if documentation_chunks_data:
-        build_docs_lancedb(documentation_chunks_data, EMBED_MODEL) 
-    else:
-        # Raise an exception if no documentation chunks were processed
-        raise ValueError("No documentation chunks were processed from DOCS_PATH. Halting execution. Check path and chunking criteria.")
+    # -------------------------------------------------------------------
+    # Generate documentation embeddings for every configured version.
+    # -------------------------------------------------------------------
+
+    for cfg in DOC_VERSIONS:
+        docs_path = cfg["docs_path"]
+        base_url = cfg["base_url"]
+        target_db_path = os.path.join(FILE_DIR, "data", cfg["db_filename"])
+
+        print("\n==============================")
+        print(f"Processing docs version: {cfg['name']}")
+        print(f"Docs path   : {docs_path}")
+        print(f"Base URL    : {base_url}")
+        print(f"Output DB   : {target_db_path}")
+        print("==============================\n")
+
+        # Extract + chunk markdown content
+        doc_chunks = process_documentation_files(docs_path, base_url)
+
+        if doc_chunks:
+            build_docs_lancedb(doc_chunks, EMBED_MODEL, db_path=target_db_path)
+        else:
+            print(f"Warning: No documentation chunks generated for docs path {docs_path}. Skipping DB creation.")
 
     write_metadata(EMBED_MODEL, tecton.__version__)
     print(f"Embeddings regenerated and metadata saved at {DATA_DIR}")
