@@ -23,18 +23,21 @@ DOC_VERSIONS = [
         "db_filename": "tecton_docs.db",
         "docs_path": os.path.expanduser("~/git/tecton-docs/docs"),
         "base_url": "https://docs.tecton.ai/docs/beta/",
+        "chunks_filename": "documentation_chunks.parquet",
     },
     {
         "name": "1.1",
         "db_filename": "tecton_docs_1.1.db",
         "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.1"),
         "base_url": "https://docs.tecton.ai/docs/",
+        "chunks_filename": "documentation_1_1_chunks.parquet",
     },
     {
         "name": "1.0",
         "db_filename": "tecton_docs_1.0.db",
         "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.0"),
         "base_url": "https://docs.tecton.ai/docs/1.0",
+        "chunks_filename": "documentation_1_0_chunks.parquet",
     },
 ]
 
@@ -48,7 +51,7 @@ def generate_doc_url(file_path: str, docs_root_path: str, base_url: str) -> str:
     return base_url + relative_path.lstrip('/')
 
 
-def process_documentation_files(docs_dir: str, base_url: str):
+def process_documentation_files(docs_dir: str, base_url: str, output_parquet_path: str):
     """Walks through docs_dir, chunks .md files, saves chunks to Parquet, and returns chunk data."""
     print(f"Starting documentation file processing from: {docs_dir}")
     
@@ -124,9 +127,15 @@ def process_documentation_files(docs_dir: str, base_url: str):
         print("No markdown files found or no content extracted. Skipping Parquet file creation.")
         return [] # Return empty list if no data
 
-    output_parquet_dir = os.path.join(FILE_DIR, "data")
+    # -------------------------------------------------------------------
+    # Persist the extracted chunks for debugging / downstream inspection.
+    # The caller specifies the full path (including filename) where the
+    # Parquet file should be written so that different documentation
+    # versions do not clobber one another.
+    # -------------------------------------------------------------------
+
+    output_parquet_dir = os.path.dirname(output_parquet_path)
     os.makedirs(output_parquet_dir, exist_ok=True)
-    output_parquet_path = os.path.join(output_parquet_dir, "documentation_chunks.parquet")
     
     df_chunks = pd.DataFrame(all_chunk_data_for_parquet)
     try:
@@ -159,8 +168,11 @@ def main():
         print(f"Output DB   : {target_db_path}")
         print("==============================\n")
 
+        # Use the explicitly configured Parquet filename for this docs version.
+        chunks_file_path = os.path.join(FILE_DIR, "data", cfg["chunks_filename"])
+
         # Extract + chunk markdown content
-        doc_chunks = process_documentation_files(docs_path, base_url)
+        doc_chunks = process_documentation_files(docs_path, base_url, chunks_file_path)
 
         if doc_chunks:
             build_docs_lancedb(doc_chunks, EMBED_MODEL, db_path=target_db_path)
