@@ -150,13 +150,19 @@ If you need the tools to align with a **specific released version** of Tecton (f
   Open `pyproject.toml` and replace the existing dependency line
 
   ```toml
-  "tecton>=0.8.0a0"
+  dependencies = [
+    # ... other dependencies ...
+    "tecton>=0.8.0a0"
+  ]
   ```
 
   with the exact version you want, e.g.
 
   ```toml
-  "tecton==1.1.10"
+  dependencies = [
+    # ... other dependencies ...
+    "tecton==1.1.10"
+  ]
   ```
 
 2. **Remove the existing lock-file.**  
@@ -167,13 +173,13 @@ If you need the tools to align with a **specific released version** of Tecton (f
   rm uv.lock
   ```
 
-3. **Re-generate the lock-file** by re-running **Step&nbsp;3** of the [Quick Start](#quick-start) section.  
-  (That command will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
+3. **Re-generate the lock-file** by re-running **Step&nbsp;3** (the `uv --directory` command) of the [Quick Start](#quick-start) section.  
+  (This will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
 
 4. **Restart** Cursor so that the new Tecton version is loaded into the MCP virtual environment.   
 
 *Supported versions:* The tools currently support **Tecton ≥ 1.0.0**.  
-Code examples are not versioned yet – they always use the latest *stable* SDK – however the **documentation** and **SDK reference** indices will now match the version you pinned.
+Code examples are not versioned yet – they always use the latest *stable* SDK – however the documentation and SDK reference indices will now match the version you pinned.
 
 ## Troubleshooting
 
