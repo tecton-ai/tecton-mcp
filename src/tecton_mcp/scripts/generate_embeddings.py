@@ -36,18 +36,6 @@ DOC_VERSIONS = [
         "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.0"),
         "base_url": "https://docs.tecton.ai/docs/1.0",
     },
-    {
-        "name": "0.9",
-        "db_filename": "tecton_docs_0.9.db",
-        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-0.9"),
-        "base_url": "https://docs.tecton.ai/docs/0.9",
-    },
-    {
-        "name": "0.8",
-        "db_filename": "tecton_docs_0.8.db",
-        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-0.8"),
-        "base_url": "https://docs.tecton.ai/docs/0.8",
-    },
 ]
 
 

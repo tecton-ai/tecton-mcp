@@ -1,4 +1,4 @@
 {
   "embedding_model": "sentence-transformers/multi-qa-MiniLM-L6-cos-v1",
-  "tecton_version": "1.1.10"
+  "tecton_version": "1.2.0b15"
 }

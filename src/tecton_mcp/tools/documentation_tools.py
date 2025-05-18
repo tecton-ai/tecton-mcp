@@ -8,14 +8,11 @@ from tecton_mcp.embed.meta import get_embedding_model
 
 # ---------------------------------------------------------------------------
 # Dynamically resolve the correct documentation DB based on installed Tecton
-# version. Multiple DB files (e.g. `tecton_docs_1.1.db`, `tecton_docs_1.0.db`,
-# `tecton_docs_0.9.db`, `tecton_docs_0.8.db`) may coexist under
-# `{FILE_DIR}/data`.  The mapping rules are:
+# version. Multiple DB files (e.g. `tecton_docs_1.1.db`, `tecton_docs_1.0.db`) 
+# may coexist under `{FILE_DIR}/data`.  The mapping rules are:
 #   - Version > 1.1.x  -> `tecton_docs.db`   (default / latest)
 #   - Version 1.1.x    -> `tecton_docs_1.1.db`
-#   - Version 1.0.x or 0.10.x -> `tecton_docs_1.0.db`
-#   - Version 0.9.x    -> `tecton_docs_0.9.db`
-#   - Version 0.8.x    -> `tecton_docs_0.8.db`
+#   - Version 1.0.x -> `tecton_docs_1.0.db`
 #   - Anything else / unknown -> fall back to the default (`tecton_docs.db`).
 # ---------------------------------------------------------------------------
 
@@ -26,6 +23,7 @@ def _get_installed_tecton_version() -> Optional[str]:
         version = getattr(tecton, "__version__", None)
         return version
     except ImportError:
+        print("Tecton is not installed. Cannot determine Tecton version.")
         return None
 
 def _resolve_docs_db_path() -> str:
@@ -37,19 +35,15 @@ def _resolve_docs_db_path() -> str:
 
     if version:
         # Extract major and minor numbers (digits) from the version string.
-        # Handles versions like `0.9.0`, `0.9.0b12`, `0.10.3rc1`, etc.
+        # Handles versions like `1.1.0`, `1.2.0b12`, `1.0.3rc1`, etc.
         match = re.match(r"^(\d+)\.(\d+)", version)
         if match:
             major, minor = int(match.group(1)), int(match.group(2))
 
             if major == 1 and minor == 1:
                 db_filename = "tecton_docs_1.1.db"
-            elif (major == 1 and minor == 0) or (major == 0 and minor == 10):
+            elif (major == 1 and minor == 0):
                 db_filename = "tecton_docs_1.0.db"
-            elif major == 0 and minor == 9:
-                db_filename = "tecton_docs_0.9.db"
-            elif major == 0 and minor == 8:
-                db_filename = "tecton_docs_0.8.db"
             # Versions >1.1 keep the default, which points to the latest docs.
 
     resolved_path = os.path.join(FILE_DIR, "data", db_filename)
