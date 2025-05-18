@@ -36,7 +36,7 @@ DOC_VERSIONS = [
         "name": "1.0",
         "db_filename": "tecton_docs_1.0.db",
         "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.0"),
-        "base_url": "https://docs.tecton.ai/docs/1.0",
+        "base_url": "https://docs.tecton.ai/docs/1.0/",
         "chunks_filename": "documentation_1_0_chunks.parquet",
     },
 ]
