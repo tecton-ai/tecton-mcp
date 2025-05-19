@@ -1,6 +1,6 @@
 [project]
 name = "tecton_mcp"
-version = "0.1.4"
+version = "0.2.0"
 description = "[private preview] Tecton MCP"
 authors = [{ name = "Tecton, Inc.", email = "support@tecton.ai" }]
 dependencies = [

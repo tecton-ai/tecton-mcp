@@ -10,6 +10,7 @@ import sys
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import AsyncIterator, List, Callable, Any, Dict, Set
+from importlib.metadata import version, PackageNotFoundError
 
 from tecton_mcp.tools.api_reference_tools import get_full_sdk_reference
 from tecton_mcp.tools.example_code_snippet_tools import load_example_code_snippet_index
@@ -61,6 +62,13 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 from mcp.server.fastmcp import Context, FastMCP
+
+try:
+    __version__ = version("tecton_mcp")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
+logger.info(f"Tecton MCP Server version: {__version__}")
 
 INSTRUCTIONS = """
 Tecton MCP Server provides a set of tools to help you with Tecton.
