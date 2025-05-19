@@ -33,13 +33,13 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
    brew install uv
    ```
 
-3. Make sure you can run the following command without running into any error. Replace `<path-to-your-local-clone>` with the actual path where you cloned the repository in step 1:
+3. Verify your installation by running the following command. Replace `<path-to-your-local-clone>` with the path where you cloned the repository in step&nbsp;1:
 
    ```bash
-   uv --directory <path-to-your-local-clone> run mcp run src/tecton_mcp/mcp_server/server.py
-   ```   
+   MCP_SMOKE_TEST=1 uv --directory <path-to-your-local-clone> run mcp run src/tecton_mcp/mcp_server/server.py
+   ```
 
-   If you see a message like `{"timestamp": "2025-04-30 12:50:58,343", "level": "INFO", "message": "Tecton MCP Server initialized", "module": "server", "function": "<module>", "line": 233}` it means that everything is working as expected. This command verifies your local setup is correct - Cursor will automatically spawn the MCP server as a subprocess when needed. You can now exit the command and go to the next step.
+   The command should exit without any errors and print a message similar to `MCP_SMOKE_TEST is set. Exiting after initialization.`. This confirms that your local setup works correctly—Cursor will automatically spawn the MCP server as a subprocess when needed.
 
 4. Configure Cursor (or any other MCP client) with the MCP server (see below)
 
@@ -168,7 +168,7 @@ By default, this tool provides guidance for the latest pre-release of the Tecton
   rm uv.lock
   ```
 
-3. **Re-generate the lock-file** by re-running **Step&nbsp;3** (the `uv --directory` command) of the [Quick Start](#quick-start) section. (This will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
+3. **Re-generate the lock-file** by re-running **Step&nbsp;3** (the `MCP_SMOKE_TEST=1 uv --directory` command) of the [Quick Start](#quick-start) section. (This will download the pinned version into an isolated environment for MCP and re-create `uv.lock`.)
 
 4. **Restart** Cursor so that the new Tecton version is loaded into the MCP virtual environment.   
 
