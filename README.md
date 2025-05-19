@@ -199,3 +199,7 @@ Click "Connect" and then list tools. You should see the Tecton MCP Server tools 
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - [MCP Specification](https://github.com/modelcontextprotocol/spec)
 - [Blog about this implementation](https://medium.com/p/252221865d26)
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
