@@ -233,3 +233,7 @@ mcp.add_tool(
 
 logger.info("Tecton MCP Server initialized")
 
+if os.environ.get("MCP_SMOKE_TEST"):
+    logger.info("MCP_SMOKE_TEST is set. Exiting after initialization.")
+    raise SystemExit(0)
+
