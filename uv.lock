@@ -1744,6 +1744,18 @@ wheels = [
 ]
 
 [[package]]
+name = "tecton-client"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/93/09/018e767d5e0b1cb936288365be17879efb0d9ace26b50f7918baad868fce/tecton_client-0.3.0.tar.gz", hash = "sha256:1de898267f6f4032e1902e7da616ea79a84e257009bd8f874797fce6d362023c", size = 20812 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f0/9e/28d1767109a6883d431d789d211e4aa8857e9ac98c6a118b99542f326532/tecton_client-0.3.0-py3-none-any.whl", hash = "sha256:41783b58bfbf54d88b73e105f94bfd6a55cc19a28f83d6d7cabe4ff0d7f4baff", size = 16314 },
+]
+
+[[package]]
 name = "tecton-mcp"
 version = "0.2.0"
 source = { editable = "." }
@@ -1761,6 +1773,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "sentence-transformers" },
     { name = "tecton" },
+    { name = "tecton-client" },
     { name = "typing-extensions" },
 ]
 
@@ -1787,6 +1800,7 @@ requires-dist = [
     { name = "pyarrow", specifier = "==15.0.2" },
     { name = "sentence-transformers", specifier = ">=2.2.0" },
     { name = "tecton", specifier = ">=0.8.0a0" },
+    { name = "tecton-client" },
     { name = "typing-extensions", specifier = ">=4.5" },
 ]
 

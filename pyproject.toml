@@ -17,7 +17,8 @@ dependencies = [
     "mcp[cli]",
     "debugpy>=1.8.11",
     "pyarrow==15.0.2",
-    "tecton>=0.8.0a0"
+    "tecton>=0.8.0a0",
+    "tecton-client"
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
