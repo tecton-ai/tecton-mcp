@@ -1,13 +1,16 @@
 """Utility to register Tecton Feature Services as FastMCP tools."""
 
 import logging
-from typing import Dict, Any, List, Callable
+from typing import Dict, Any, List, Annotated
+import os
 
 import tecton
 from tecton.types import ( # Import Tecton data types
     Int64, Int32, Float64, Float32, String, Bool, Array, Struct, Map, Timestamp, SdkDataType
 )
-from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.fastmcp import FastMCP
+from pydantic import Field
+from tecton_client import TectonClient, MetadataOptions
 
 
 # Helper function to map Tecton DTypes to Python type hints
@@ -65,81 +68,113 @@ def extract_request_context_map_from_feature_service(fs):
             request_context_info[field_name] = tecton_type
     return request_context_info
 
-def _create_feature_service_tool(
-    workspace: str, feature_service_name: str
-) -> Callable[..., List[Dict[str, Any]]]:
-    """Return a callable tool for the given Feature Service, with dynamic parameters declared via annotations."""
-    ws = tecton.get_workspace(workspace)
-    fs = ws.get_feature_service(feature_service_name)
-
-    join_keys_info = extract_join_keys_map_from_feature_service(fs)
-    request_context_info = extract_request_context_map_from_feature_service(fs)
-
-    annotations: Dict[str, Any] = {}
-    param_names_ordered = [] # To maintain a somewhat sensible order for generated help, if any
-
-    for name, tecton_dtype in join_keys_info.items():
-        annotations[name] = _map_tecton_type_to_python_type(tecton_dtype)
-        if name not in param_names_ordered:
-            param_names_ordered.append(name)
+def _create_feature_service_tool_function(workspace: str, feature_service_name: str, join_keys_info: Dict, request_context_info: Dict, cluster_url: str):
+    """Create a function for the given Feature Service with dynamic parameters."""
     
+    # Build parameter list and annotations
+    param_list = []
+    annotations = {}
+    
+    # Add join key parameters
+    for name, tecton_dtype in join_keys_info.items():
+        python_type = _map_tecton_type_to_python_type(tecton_dtype)
+        param_list.append(f"{name}: Annotated[{python_type.__name__}, Field(description='Join key: {name}')]")
+        annotations[name] = Annotated[python_type, Field(description=f"Join key: {name}")]
+    
+    # Add request context parameters  
     for name, tecton_dtype in request_context_info.items():
-        annotations[name] = _map_tecton_type_to_python_type(tecton_dtype)
-        if name not in param_names_ordered:
-            param_names_ordered.append(name)
+        python_type = _map_tecton_type_to_python_type(tecton_dtype)
+        param_list.append(f"{name}: Annotated[{python_type.__name__}, Field(description='Request context: {name}')]")
+        annotations[name] = Annotated[python_type, Field(description=f"Request context: {name}")]
 
-    annotations["ctx"] = Context
-    annotations["return"] = List[Dict[str, Any]]
+    # Create function signature
+    params_str = ', '.join(param_list)
+    
+    # Build the function code
+    func_code = f"""
+def feature_service_function({params_str}) -> List[Dict[str, Any]]:
+    '''Execute the feature service with the provided parameters.'''
+    
+    join_key_map_dyn = {{}}
+    request_context_map_dyn = {{}}
 
-    def feature_service_tool_dynamic(**kwargs_received) -> List[Dict[str, Any]]:
-        # Extract ctx; it's explicitly in annotations, so FastMCP should ensure it's passed if required.
-        actual_ctx = kwargs_received.pop("ctx", None)
-        if actual_ctx is None:
-            # This check might be redundant if FastMCP enforces params based on annotations
-            raise TypeError(f"Tool for {feature_service_name}: Missing required argument 'ctx'.")
+    # Extract join keys from function parameters
+"""
+    
+    # Add code to extract join keys
+    for name in join_keys_info.keys():
+        func_code += f"    join_key_map_dyn['{name}'] = {name}\n"
+    
+    # Add code to extract request context
+    for name in request_context_info.keys():
+        func_code += f"    request_context_map_dyn['{name}'] = {name}\n"
+    
+    func_code += f"""
+    from tecton_client import TectonClient, MetadataOptions
+    import logging
+    import os
 
-        join_key_map_dyn = {}
-        request_context_map_dyn = {}
+    # Log the feature service execution details
+    logger = logging.getLogger(__name__)
+    logger.info(f"Executing feature service: {feature_service_name} in workspace: {workspace}")
+    logger.info(f"Join key map: {{join_key_map_dyn}}")
+    logger.info(f"Request context map: {{request_context_map_dyn}}")
 
-        # Populate maps from remaining kwargs based on known keys
-        for key_name in join_keys_info.keys():
-            if key_name in kwargs_received:
-                join_key_map_dyn[key_name] = kwargs_received[key_name]
-            else:
-                # Assuming FastMCP will handle missing required parameters based on annotations.
-                # If not, a more robust check/error would be needed here if a join_key is mandatory.
-                pass 
-        
-        for key_name in request_context_info.keys():
-            if key_name in kwargs_received:
-                request_context_map_dyn[key_name] = kwargs_received[key_name]
-            else:
-                # Similar assumption for request_context_keys
-                pass
+    # Get API key from environment variable
+    api_key = os.environ.get('TECTON_API_KEY')
+    if not api_key:
+        raise ValueError("TECTON_API_KEY environment variable is not set. Please set it to your Tecton API key.")
 
-        from tecton_client import TectonClient # Local import
+    # Create TectonClient
+    client = TectonClient(
+        url="{cluster_url}",
+        default_workspace_name="{workspace}",
+        api_key=api_key
+    )
 
-        client = TectonClient(
-            url="https://explore.tecton.ai/", # Consider making configurable
-            api_key="my-api-key",           # Consider making configurable or using Tecton config
-            default_workspace_name=workspace, # Captured from outer scope
-        )
-        resp = client.get_features(
-            feature_service_name=feature_service_name, # Captured from outer scope
-            join_key_map=join_key_map_dyn,
-            request_context_map=request_context_map_dyn,
-        )
-        return resp.result.features
+    logger.info(f"Making request to TectonClient with URL: {cluster_url}")
+    logger.info(f"Feature service: {feature_service_name}")
+    logger.info(f"Join key map: {{join_key_map_dyn}}")
+    logger.info(f"Request context map: {{request_context_map_dyn}}")
 
-    feature_service_tool_dynamic.__annotations__ = annotations
-    # __name__ and __doc__ will be effectively set by server.add_tool arguments
-    # feature_service_tool_dynamic.__name__ = f"tool_for_{feature_service_name.replace('.', '_')}" 
+    # Get features with all metadata
+    resp = client.get_features(
+        feature_service_name="{feature_service_name}",
+        join_key_map=join_key_map_dyn,
+        request_context_map=request_context_map_dyn,
+        metadata_options=MetadataOptions.all()
+    )
 
-    return feature_service_tool_dynamic
+    logger.info(f"TectonClient response: {{resp}}")
+    
+    # Return the response object (which contains result.features and metadata)
+    return resp
+"""
+
+    # Create a local namespace with required imports
+    local_namespace = {
+        'List': List,
+        'Dict': Dict, 
+        'Any': Any,
+        'Annotated': Annotated,
+        'Field': Field,
+    }
+    
+    # Execute the function code
+    exec(func_code, local_namespace)
+    
+    # Get the created function
+    func = local_namespace['feature_service_function']
+    
+    # Set annotations on the function
+    func.__annotations__ = annotations
+    func.__annotations__['return'] = List[Dict[str, Any]]
+    
+    return func
 
 
-def register_tecton_feature_service_as_tools(workspace: str, server: FastMCP) -> None:
-    """Register tools for all Feature Services in a workspace.
+def register_tecton_feature_service_as_tools(workspace: str, server: FastMCP, cluster_url: str) -> None:
+    """Register tools for all Feature Services in a workspace using function-based approach.
 
     This function is resilient to missing Tecton configuration. If any errors
     occur while fetching feature services, they are logged and the registration
@@ -147,11 +182,9 @@ def register_tecton_feature_service_as_tools(workspace: str, server: FastMCP) ->
     """
 
     logger = logging.getLogger(__name__)
-
-
+    
     ws = tecton.get_workspace(workspace)
     fs_names = ws.list_feature_services()
-
 
     try:
         for fs_name in fs_names:
@@ -167,8 +200,14 @@ def register_tecton_feature_service_as_tools(workspace: str, server: FastMCP) ->
             if feature_details:
                 description = f"{description}\nFeatures: {', '.join(feature_details)}"
 
-            tool_func = _create_feature_service_tool(workspace, fs_name)
+            join_keys_info = extract_join_keys_map_from_feature_service(fs)
+            request_context_info = extract_request_context_map_from_feature_service(fs)
+
+            # Create function with cluster URL
+            tool_func = _create_feature_service_tool_function(workspace, fs_name, join_keys_info, request_context_info, cluster_url)
             tool_name = f"{fs_name}_tool"
+            
+            # Add the tool to the server using the traditional approach
             server.add_tool(tool_func, name=tool_name, description=description)
 
             logger.info(f"Registered tool: {tool_name}")

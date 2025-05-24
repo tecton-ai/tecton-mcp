@@ -235,9 +235,11 @@ mcp.add_tool(
 # --- End of dynamic tool registration ---
 
 import tecton
+from tecton._internals.utils import cluster_url
 
 current_workspace = tecton.get_current_workspace()
-register_tecton_feature_service_as_tools(current_workspace, mcp)
+tecton_cluster_url = cluster_url()
+register_tecton_feature_service_as_tools(current_workspace, mcp, tecton_cluster_url)
 
 logger.info("Tecton MCP Server initialized")
 
