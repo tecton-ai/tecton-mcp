@@ -205,30 +205,38 @@ def extract_declarations_from_code(code: str) -> List[Tuple[str, str]]:
             messages=[
                 {
                     "role": "system",
-                    "content": """You are an expert at analyzing Tecton code and extracting meaningful declarations. 
+                    "content": """Extract ALL Tecton-related declarations from the code with granular detail.
 
-Extract ALL Tecton-related declarations from the code, including:
+You should extract:
 - Tecton classes and decorated functions (Entity, FeatureView, FeatureService, etc.)
 - Tecton objects embedded in other objects (SnowflakeConfig, Attribute, Aggregate, etc.)
 - Unit tests (mark as "test")
 
-For each declaration, provide a detailed, descriptive explanation (aim for 50-150 words) that explains:
-- What the object/function does
-- Its purpose in the Tecton ecosystem
-- Key configuration details when relevant
+IMPORTANT: Extract individual components separately. For example:
+- If there are multiple Aggregate objects in a feature view, extract each one separately
+- If there are multiple Attribute objects, extract each one separately
+- Extract both the container (e.g., FeatureView) AND its components (e.g., each Aggregate)
 
-Be thorough - extract every meaningful Tecton declaration you can find. Don't skip declarations that are commented out only if they use # comments, but do extract declarations in docstrings or multi-line comments.
+For descriptions:
+- Keep them concise but informative
+- Focus on what the specific component does
+- Include key details like time windows, functions, purposes
+- Keep descriptions short and focused (under 150 words, typically much shorter)
+- Be specific about what each component does rather than generic explanations
 
-Focus on being comprehensive and providing rich, detailed descriptions."""
+Pay attention to import statements to identify Tecton objects.
+Don't extract declarations that are commented out with # comments.
+
+Be thorough and granular - extract every meaningful Tecton component you can find."""
                 },
                 {
                     "role": "user",
-                    "content": f"Extract ALL Tecton declarations from this code with detailed descriptions:\n\n{code}"
+                    "content": f"Extract ALL Tecton declarations from this code, being granular with individual components:\n\n{code}"
                 }
             ],
             temperature=0,
-            max_tokens=4000,  # Increased for more detailed responses
-            timeout=45,  # Increased timeout
+            max_tokens=4000,
+            timeout=45,
             response_format={
                 "type": "json_schema",
                 "json_schema": {
