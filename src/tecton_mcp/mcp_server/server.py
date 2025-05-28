@@ -19,6 +19,9 @@ from tecton_mcp.embed.meta import get_embedding_model
 from tecton_mcp.utils.sdk_introspector import get_sdk_definitions
 from tecton._internals.sdk_decorators import sdk_public_method
 
+# Added for direct Tecton SDK calls
+import tecton
+
 # Set up JSON logging
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -69,6 +72,29 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 logger.info(f"Tecton MCP Server version: {__version__}")
+
+# Example of making Tecton SDK calls directly from the server during initialization
+logger.info("Attempting to read Tecton SDK configurations directly from server.py...")
+try:
+    batch_compute_mode = tecton.conf.get_or_none('TECTON_BATCH_COMPUTE_MODE')
+    logger.info(f"SDK: tecton.conf.get_or_none('TECTON_BATCH_COMPUTE_MODE') = {batch_compute_mode}")
+
+    offline_compute_mode = tecton.conf.get_or_none('TECTON_OFFLINE_RETRIEVAL_COMPUTE_MODE')
+    logger.info(f"SDK: tecton.conf.get_or_none('TECTON_OFFLINE_RETRIEVAL_COMPUTE_MODE') = {offline_compute_mode}")
+
+    current_workspace = tecton.get_current_workspace()
+    if current_workspace:
+        logger.info(f"SDK: Current Tecton workspace = {current_workspace.name}")
+    else:
+        logger.info("SDK: No Tecton workspace currently selected or found by SDK.")
+
+except ImportError:
+    logger.error("Tecton SDK could not be imported. Ensure it is installed in the environment.")
+except AttributeError as ae:
+    logger.error(f"Tecton SDK attribute error (e.g., 'conf' or a method might not be available in your SDK version): {ae}")
+except Exception as e:
+    logger.error(f"Error making example Tecton SDK call during server initialization: {e}")
+
 
 INSTRUCTIONS = """
 Tecton MCP Server provides a set of tools to help you with Tecton.
