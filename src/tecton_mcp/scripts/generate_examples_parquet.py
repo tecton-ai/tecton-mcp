@@ -68,11 +68,10 @@ Pay attention to import statements to identify Tecton objects.
 Don't extract declarations that are commented out with # comments.
 
 CRITICAL REQUIREMENTS FOR DESCRIPTIONS:
-1. ALWAYS use the actual `description` field from the code (e.g., FeatureView.description, Entity.description)
-2. ALWAYS use any descriptive comments when available
-3. NEVER just use the function name or variable name as the description
-4. If no description field or comments exist, infer the business purpose from context and variable names
-5. Focus on WHAT the component does for the business, in addition to technical details
+1. ALWAYS use comments above the declaration 
+2. ALWAYS use the actual `description` field from the code (e.g., FeatureView.description, Entity.description)
+3. If neither description field nor comments exist, infer the business purpose from context and variable names
+4. Focus on WHAT the component does for the business, in addition to technical details
 
 EXAMPLES OF GOOD vs BAD descriptions:
 
@@ -80,20 +79,14 @@ GOOD:
 - "Article interactions: aggregations of clicks, carts, orders on an article" (uses actual description field)
 - "Unique sessions with article interactions over the past 30 days" (business meaning)
 - "Distance in kilometers between transaction and user's home location, used for fraud detection"
+- "Transaction request source schema" (from comments)
 
 BAD:
 - "article_sessions" (just the function name)
 - "transactions_batch" (just the variable name)
 - "ad_impressions_batch" (just the variable name)
 
-For each declaration type:
-- Feature views: Use the description parameter value
-- Entity: Use the description parameter value
-- Aggregate: Combine function + time window + business purpose
-- Data sources: Describe what data it contains and its business purpose
-- Configuration objects: Describe their role in the data pipeline
-
-NEVER extract a declaration where the description is just the object name!
+For each declaration type, use the description parameter value AND comments if they exist, then also infer purpose from context
 
 Focus on extracting components that would be useful for someone learning Tecton or implementing similar features.
 
@@ -242,7 +235,7 @@ def user_transaction_amount_metrics(transactions):
                 },
                 {
                     "role": "user",
-                    "content": f"Extract meaningful Tecton declarations from this code. Use actual description fields when available, never just object names:\n\n{code}"
+                    "content": f"Extract meaningful Tecton declarations from this code. Use comments and description fields when available:\n\n{code}"
                 }
             ],
             temperature=0,
@@ -275,32 +268,8 @@ def user_transaction_amount_metrics(transactions):
         result = json.loads(response.choices[0].message.content)
         declarations = result.get("declarations", [])
         
-        # Enhanced validation - reject descriptions that are just object names
-        valid_declarations = []
-        for declaration in declarations:
-            if len(declaration) >= 2:
-                obj_type = declaration[0].strip()
-                description = declaration[1].strip()
-                
-                # Skip if description is too short or looks like just a name
-                if len(description) < 10:
-                    continue
-                    
-                # Skip if description is just the object type repeated
-                if description.lower() == obj_type.lower():
-                    continue
-                    
-                # Skip if description looks like just a variable name (no spaces, all lowercase/underscore)
-                if '_' in description and ' ' not in description and description.islower():
-                    continue
-                    
-                # Skip if description is just a single word
-                if ' ' not in description and len(description) < 20:
-                    continue
-                
-                valid_declarations.append(declaration)
-        
-        return valid_declarations
+        # Return all declarations without validation filtering
+        return declarations
     
     except Exception as e:
         print(f"Error extracting declarations: {e}")
