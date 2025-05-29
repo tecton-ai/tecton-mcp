@@ -21,28 +21,83 @@ from typing import List, Dict, Any, Tuple
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from pathlib import Path
+from enum import Enum
 
 # Initialize OpenAI client
 client = OpenAI()
 
-class Declarations(BaseModel):
-    """Model for extracted Tecton declarations."""
-    declarations: List[Tuple[str, str]] = Field(
-        ..., 
-        description="""List of tuples of declarations.
+
+class DirectoryType(Enum):
+    RIFT = "rift"
+    SPARK = "spark"
+
+
+class DirectoryConfig:
+    def __init__(self, path: str, directory_type: DirectoryType):
+        self.path = os.path.expanduser(path)
+        self.type = directory_type
+
+
+def get_py_files(directory: str) -> List[str]:
+    """Recursively find all Python files in a directory."""
+    files = []
+    for root, dirs, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith('.py'):
+                files.append(os.path.join(root, filename))
+    return files
+
+
+def extract_declarations_from_code(code: str) -> List[Tuple[str, str]]:
+    """Extract Tecton declarations from Python code using OpenAI."""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1",  
+            messages=[
+                {
+                    "role": "system",
+                    "content": """Extract Tecton-related declarations from the code, as a list of tuples of declarations.
 Each tuple contains the object/function name and the description.
 
-You should only extract:
-- Tecton classes and decorated functions
-- Tecton objects embedded in other objects (e.g. SnowflakeConfig in BatchSource, Attribute and Aggregate)
-- Unit tests (set the first value in the tuple as "test")
-                                              
-Pay attention to the import statements at the beginning that tells you which objects and functions are imported from Tecton.
+YOU SHOULD EXTRACT:
+- Tecton classes and decorated functions (Entity, FeatureView, FeatureService, etc.)
+- Tecton objects embedded in other objects (SnowflakeConfig, Attribute, Aggregate, etc.)
+- Unit tests (describe explcitly as "Unit test" and then describe what it's testing)
 
-Don't extract declarations that are commented out
+Pay attention to import statements to identify Tecton objects.
+Don't extract declarations that are commented out with # comments.
 
-The description should be under 150 words
+CRITICAL REQUIREMENTS FOR DESCRIPTIONS:
+1. ALWAYS use the actual `description` field from the code (e.g., FeatureView.description, Entity.description)
+2. ALWAYS use any descriptive comments when available
+3. NEVER just use the function name or variable name as the description
+4. If no description field or comments exist, infer the business purpose from context and variable names
+5. Focus on WHAT the component does for the business, in addition to technical details
 
+EXAMPLES OF GOOD vs BAD descriptions:
+
+GOOD:
+- "Article interactions: aggregations of clicks, carts, orders on an article" (uses actual description field)
+- "Unique sessions with article interactions over the past 30 days" (business meaning)
+- "Distance in kilometers between transaction and user's home location, used for fraud detection"
+
+BAD:
+- "article_sessions" (just the function name)
+- "transactions_batch" (just the variable name)
+- "ad_impressions_batch" (just the variable name)
+
+For each declaration type:
+- Feature views: Use the description parameter value
+- Entity: Use the description parameter value
+- Aggregate: Combine function + time window + business purpose
+- Data sources: Describe what data it contains and its business purpose
+- Configuration objects: Describe their role in the data pipeline
+
+NEVER extract a declaration where the description is just the object name!
+
+Focus on extracting components that would be useful for someone learning Tecton or implementing similar features.
+
+MORE EXAMPLES:
 
 For example, with this code:
 
@@ -184,54 +239,10 @@ def user_transaction_amount_metrics(transactions):
                                               
 [("Aggregate", "sum of transaction amounts over the past hour"), ("Aggregate", "max of transaction amounts over the past day"), ("Aggregate", "min of transaction amounts over the past 3 days"), ("Aggregate", "50th percentile of transaction amounts over the past hour")]
 """
-    )
-
-
-def get_py_files(directory: str) -> List[str]:
-    """Recursively find all Python files in a directory."""
-    files = []
-    for root, dirs, filenames in os.walk(directory):
-        for filename in filenames:
-            if filename.endswith('.py'):
-                files.append(os.path.join(root, filename))
-    return files
-
-
-def extract_declarations_from_code(code: str) -> List[Tuple[str, str]]:
-    """Extract Tecton declarations from Python code using OpenAI."""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-2024-11-20",
-            messages=[
-                {
-                    "role": "system",
-                    "content": """Extract ALL Tecton-related declarations from the code with granular detail.
-
-You should extract:
-- Tecton classes and decorated functions (Entity, FeatureView, FeatureService, etc.)
-- Tecton objects embedded in other objects (SnowflakeConfig, Attribute, Aggregate, etc.)
-- Unit tests (mark as "test")
-
-IMPORTANT: Extract individual components separately. For example:
-- If there are multiple Aggregate objects in a feature view, extract each one separately
-- If there are multiple Attribute objects, extract each one separately
-- Extract both the container (e.g., FeatureView) AND its components (e.g., each Aggregate)
-
-For descriptions:
-- Keep them concise but informative
-- Focus on what the specific component does
-- Include key details like time windows, functions, purposes
-- Keep descriptions short and focused (under 150 words, typically much shorter)
-- Be specific about what each component does rather than generic explanations
-
-Pay attention to import statements to identify Tecton objects.
-Don't extract declarations that are commented out with # comments.
-
-Be thorough and granular - extract every meaningful Tecton component you can find."""
                 },
                 {
                     "role": "user",
-                    "content": f"Extract ALL Tecton declarations from this code, being granular with individual components:\n\n{code}"
+                    "content": f"Extract meaningful Tecton declarations from this code. Use actual description fields when available, never just object names:\n\n{code}"
                 }
             ],
             temperature=0,
@@ -262,27 +273,57 @@ Be thorough and granular - extract every meaningful Tecton component you can fin
         )
         
         result = json.loads(response.choices[0].message.content)
-        return result.get("declarations", [])
+        declarations = result.get("declarations", [])
+        
+        # Enhanced validation - reject descriptions that are just object names
+        valid_declarations = []
+        for declaration in declarations:
+            if len(declaration) >= 2:
+                obj_type = declaration[0].strip()
+                description = declaration[1].strip()
+                
+                # Skip if description is too short or looks like just a name
+                if len(description) < 10:
+                    continue
+                    
+                # Skip if description is just the object type repeated
+                if description.lower() == obj_type.lower():
+                    continue
+                    
+                # Skip if description looks like just a variable name (no spaces, all lowercase/underscore)
+                if '_' in description and ' ' not in description and description.islower():
+                    continue
+                    
+                # Skip if description is just a single word
+                if ' ' not in description and len(description) < 20:
+                    continue
+                
+                valid_declarations.append(declaration)
+        
+        return valid_declarations
     
     except Exception as e:
         print(f"Error extracting declarations: {e}")
         return []
 
 
-def extract_declarations(folders: List[str]) -> List[Dict[str, Any]]:
-    """Extract declarations from all Python files in the given folders."""
-    files = []
-    for folder in folders:
-        if os.path.exists(folder):
-            files.extend(get_py_files(folder))
-        else:
-            print(f"Warning: Directory {folder} does not exist, skipping...")
+def extract_declarations(directory_configs: List[DirectoryConfig]) -> List[Dict[str, Any]]:
+    """Extract declarations from all Python files in the given directory configurations."""
+    files_with_types = []
     
-    print(f"Found {len(files)} Python files to process")
+    for config in directory_configs:
+        if os.path.exists(config.path):
+            folder_files = get_py_files(config.path)
+            for file_path in folder_files:
+                files_with_types.append((file_path, config.type))
+        else:
+            print(f"Warning: Directory {config.path} does not exist, skipping...")
+    
+    print(f"Found {len(files_with_types)} Python files to process")
     
     res = []
-    for i in tqdm.tqdm(range(len(files)), desc="Processing files"):
-        file_path = files[i]
+    for i in tqdm.tqdm(range(len(files_with_types)), desc="Processing files"):
+        file_path, directory_type = files_with_types[i]
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 code = f.read()
@@ -297,7 +338,8 @@ def extract_declarations(folders: List[str]) -> List[Dict[str, Any]]:
                     res.append({
                         "text": f"Example of {declaration[0]}. {declaration[1]}", 
                         "code": code,
-                        "file_path": file_path
+                        "file_path": file_path,
+                        "directory_type": directory_type
                     })
         except Exception as e:
             print(f"Error processing file {file_path}: {e}")
@@ -306,29 +348,21 @@ def extract_declarations(folders: List[str]) -> List[Dict[str, Any]]:
     return res
 
 
-def is_rift_code(file_path: str, code: str) -> bool:
-    """Determine if the code is Rift-based or Spark-based based on file path."""
-    # Check if file path contains 'rift' directory
-    if '/rift/' in file_path.lower() or file_path.lower().endswith('/rift'):
-        return True
-    
-    return False
-
-
 def main():
     """Main function to generate examples parquet files."""
-    # Define the directories to process
-    directories = [
-        os.path.expanduser("~/git/tecton-sample-repo/spark"),
-        os.path.expanduser("~/git/tecton-sample-repo/rift"), 
-        os.path.expanduser("~/git/examples/Spark")  # Updated to match actual directory name
+    # Define the directories to process with their types
+    directory_configs = [
+        DirectoryConfig("~/git/tecton-sample-repo/rift", DirectoryType.RIFT),
+        DirectoryConfig("~/git/examples/Snowflake", DirectoryType.RIFT),
+        DirectoryConfig("~/git/examples/Spark", DirectoryType.SPARK),
+        DirectoryConfig("~/git/tecton-sample-repo/spark", DirectoryType.SPARK),
     ]
     
     print("Starting extraction of Tecton declarations...")
-    print(f"Processing directories: {directories}")
+    print(f"Processing directories: {[config.path for config in directory_configs]}")
     
-    # Extract all declarations
-    all_declarations = extract_declarations(directories)
+    # Extract all declarations with type information
+    all_declarations = extract_declarations(directory_configs)
     
     if not all_declarations:
         print("No declarations found. Exiting.")
@@ -336,21 +370,20 @@ def main():
     
     print(f"Extracted {len(all_declarations)} declarations")
     
-    # Separate into Rift and Spark examples
+    # Separate into Rift and Spark examples based on directory_type
     rift_examples = []
     spark_examples = []
     
     for declaration in all_declarations:
-        if is_rift_code(declaration.get("file_path", ""), declaration.get("code", "")):
-            rift_examples.append({
-                "text": declaration["text"],
-                "code": declaration["code"]
-            })
+        example_data = {
+            "text": declaration["text"],
+            "code": declaration["code"]
+        }
+        
+        if declaration["directory_type"] == DirectoryType.RIFT:
+            rift_examples.append(example_data)
         else:
-            spark_examples.append({
-                "text": declaration["text"], 
-                "code": declaration["code"]
-            })
+            spark_examples.append(example_data)
     
     print(f"Found {len(rift_examples)} Rift examples and {len(spark_examples)} Spark examples")
     
