@@ -123,7 +123,7 @@ Log into your Tecton cluster:
 
 ### Recommended LLM
 
-As of April 17th, the following is the stack ranked list of best performing Tecton feature engineering LLMs in Cursor:
+As of June 2025, the following is the stack ranked list of best performing Tecton feature engineering LLMs in Cursor; this list may evolve over time as new models are released:
 - Claude Sonnet 4
 - OpenAI o3
 - Gemini 2.5 pro exp (03-25)
