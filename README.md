@@ -102,14 +102,13 @@ Add Tecton as an MCP server. You can use the following config as a starting poin
 
 ### Add Cursor rules
 
-Copy the cursorrules from this repository's [`.cursor/rules` folder](https://github.com/tecton-ai/tecton-mcp/tree/main/.cursor/rules) into the `.cursor/rules` folder of your [feature repository](https://docs.tecton.ai/docs/setting-up-tecton/development-setup/creating-a-feature-repository):
+Symlink the cursorrules from this repository's [`.
+cursor/rules` folder](https://github.com/tecton-ai/
+tecton-mcp/tree/main/.cursor/rules) into your [feature repository](https://docs.tecton.ai/docs/setting-up-tecton/development-setup/creating-a-feature-repository). Using symlinks ensures that any updates to the original rules will automatically be picked up in your feature repository:
 
 ```bash
-# Create the .cursor/rules directory structure in your feature repository
-mkdir -p <path-to-your-feature-repo>/.cursor/rules
-
-# Then copy the rules
-cp -r <path-to-your-local-clone>/.cursor/rules/* <path-to-your-feature-repo>/.cursor/rules/
+# Symlink the entire .cursor directory in your feature repo
+ln -s <path-to-your-local-clone>/.cursor <path-to-your-feature-repo>/.cursor
 ```
 
 
