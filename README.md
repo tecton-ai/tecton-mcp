@@ -124,9 +124,9 @@ Log into your Tecton cluster:
 ### Recommended LLM
 
 As of April 17th, the following is the stack ranked list of best performing Tecton feature engineering LLMs in Cursor:
+- Claude Sonnet 4
 - OpenAI o3
 - Gemini 2.5 pro exp (03-25)
-- Sonnet 3.7
 
 ### Verify that the Cursor <> Tecton MCP Integration is working as expected
 
