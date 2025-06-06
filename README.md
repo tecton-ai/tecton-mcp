@@ -132,6 +132,8 @@ As of June 2025, the following is the stack ranked list of best performing Tecto
 To make sure that your integration works as expected, ask the Cursor Agent a question like the following and make sure it's properly invoking your Tecton MCP tools:
 > Query Tecton's Examples Index and tell me something about BatchFeatureViews and how they differ from StreamFeatureViews. Also look at the SDK Reference.
 
+If no calls are made to Tecton MCP tools, you may need to restart Cursor or reload your Cursor window to ensure new tools are properly registered.
+
 ### Start AI-Assisted Feature Engineering :-)
 
 Now you can go to your **Feature Repository** in Cursor and start using Tecton's Co-Pilot - directly integrated in Cursor.
