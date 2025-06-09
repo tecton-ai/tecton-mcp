@@ -43,6 +43,20 @@ def _map_tecton_type_to_python_type(tecton_type: SdkDataType) -> Any:
     # or if new SdkDataType primitives are encountered.
     return Any
 
+def _extract_join_keys_from_feature_view(fv, override_map):
+    """Helper function to extract join keys from a single feature view."""
+    join_keys_info = {}
+    if hasattr(fv, 'entities') and fv.entities:
+        for entity_obj in fv.entities:
+            if entity_obj._spec and entity_obj._spec.join_keys:
+                for column_id_obj in entity_obj._spec.join_keys:
+                    key_name = column_id_obj.name
+                    key_type_obj = column_id_obj.dtype
+                    final_key_name = override_map.get(key_name, key_name)
+                    join_keys_info[final_key_name] = key_type_obj
+    return join_keys_info
+
+
 def extract_join_keys_map_from_feature_service(fs):
     join_keys_info = {}
     if fs.features:
@@ -50,14 +64,26 @@ def extract_join_keys_map_from_feature_service(fs):
             fv = ref.feature_definition
             override_map = ref.override_join_keys or {}
 
-            if hasattr(fv, 'entities') and fv.entities:
-                for entity_obj in fv.entities:
-                    if entity_obj._spec and entity_obj._spec.join_keys:
-                        for column_id_obj in entity_obj._spec.join_keys:
-                            key_name = column_id_obj.name
-                            key_type_obj = column_id_obj.dtype
+            # Extract join keys directly from the feature view (works for materialized feature views)
+            direct_join_keys = _extract_join_keys_from_feature_view(fv, override_map)
+            join_keys_info.update(direct_join_keys)
+            
+            # For realtime feature views, also check their source feature view dependencies
+            if hasattr(fv, 'sources') and fv.sources:
+                for source in fv.sources:
+                    # Skip RequestSource objects (they don't have join keys)
+                    if hasattr(source, 'feature_definition'):
+                        # This is a FeatureReference to another feature view
+                        source_fv = source.feature_definition
+                        source_override_map = source.override_join_keys or {}
+                        
+                        # Extract join keys from the source feature view
+                        source_join_keys = _extract_join_keys_from_feature_view(source_fv, source_override_map)
+                        
+                        # Apply the main feature reference override to the source join keys
+                        for key_name, key_type in source_join_keys.items():
                             final_key_name = override_map.get(key_name, key_name)
-                            join_keys_info[final_key_name] = key_type_obj
+                            join_keys_info[final_key_name] = key_type
     return join_keys_info
 
 
