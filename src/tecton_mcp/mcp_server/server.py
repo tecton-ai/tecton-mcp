@@ -15,6 +15,9 @@ from importlib.metadata import version, PackageNotFoundError
 from tecton_mcp.tools.api_reference_tools import get_full_sdk_reference
 from tecton_mcp.tools.example_code_snippet_tools import load_example_code_snippet_index
 from tecton_mcp.tools.documentation_tools import load_documentation_index
+from tecton_mcp.tools.feature_service_tool_library import (
+    register_tecton_feature_service_as_tools,
+)
 from tecton_mcp.embed.meta import get_embedding_model
 from tecton_mcp.utils.sdk_introspector import get_sdk_definitions
 from tecton._internals.sdk_decorators import sdk_public_method
@@ -225,11 +228,23 @@ Available classes/functions:
 tool_func, tool_name, tool_description = _create_dynamic_sdk_reference_tool()
 # Try positional arguments based on the error message
 mcp.add_tool(
-    tool_func, 
-    name=tool_name, 
+    tool_func,
+    name=tool_name,
     description=tool_description
 )
 # --- End of dynamic tool registration ---
+
+import tecton
+from tecton._internals.utils import cluster_url
+
+# Only register FeatureServices as tools if TECTON_API_KEY is set
+if os.environ.get("TECTON_API_KEY"):
+    current_workspace = tecton.get_current_workspace()
+    tecton_cluster_url = cluster_url()
+    register_tecton_feature_service_as_tools(current_workspace, mcp, tecton_cluster_url)
+    logger.info("FeatureServices registered as tools")
+else:
+    logger.warning("No TECTON_API_KEY found - FeatureServices will not be registered as tools")
 
 logger.info("Tecton MCP Server initialized")
 
