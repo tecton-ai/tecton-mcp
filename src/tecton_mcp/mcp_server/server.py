@@ -237,9 +237,14 @@ mcp.add_tool(
 import tecton
 from tecton._internals.utils import cluster_url
 
-current_workspace = tecton.get_current_workspace()
-tecton_cluster_url = cluster_url()
-register_tecton_feature_service_as_tools(current_workspace, mcp, tecton_cluster_url)
+# Only register FeatureServices as tools if TECTON_API_KEY is set
+if os.environ.get("TECTON_API_KEY"):
+    current_workspace = tecton.get_current_workspace()
+    tecton_cluster_url = cluster_url()
+    register_tecton_feature_service_as_tools(current_workspace, mcp, tecton_cluster_url)
+    logger.info("FeatureServices registered as tools")
+else:
+    logger.warning("No TECTON_API_KEY found - FeatureServices will not be registered as tools")
 
 logger.info("Tecton MCP Server initialized")
 

@@ -63,6 +63,8 @@ The Tecton MCP server exposes the following tools that can be used by an MCP cli
 | `get_full_tecton_sdk_reference_tool`    | Fetches the complete Tecton SDK reference, including all available classes and functions. Use when a broad overview of the SDK is needed. |
 | `query_tecton_sdk_reference_tool`       | Fetches the Tecton SDK reference for a specified list of classes or functions. Ideal for targeted information on specific SDK components.   |
 
+> ℹ️ **Feature Services**: If the MCP server is configured with a `TECTON_API_KEY` environment variable, the MCP server will register Tecton Feature Services as tools. This makes it possible for agents to query online feature services for fresh features from batch, streaming and real-time data sources.
+
 ## Architecture
 
 The Tecton MCP integrates with LLM-powered editors like Cursor to provide tool-based context and assistance for feature engineering:
