@@ -1,0 +1,2 @@
+timeout: 900
+expected_prompt_response: "YES"

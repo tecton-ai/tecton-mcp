@@ -1,0 +1,1 @@
+"""Integration tests for Tecton MCP server."""

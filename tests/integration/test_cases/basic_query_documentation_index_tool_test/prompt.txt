@@ -1,0 +1,4 @@
+Call the tecton mcp server tool mcp__tecton__query_documentation_index_tool
+Ask for an explanation about Stream Feature Views
+Respond with "YES" if find an explanation about Stream Feature Views. Otherwise respond with an error that explains what happened
+

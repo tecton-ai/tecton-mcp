@@ -1,0 +1,4 @@
+Call the tecton mcp server tool mcp__tecton__query_example_code_snippet_index_tool
+Look for stream feature view examples
+Respond with "YES" if you found examples. Otherwise respond with an error that explains what happened
+
