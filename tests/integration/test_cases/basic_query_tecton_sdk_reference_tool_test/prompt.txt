@@ -1,0 +1,4 @@
+Call the tecton mcp server tool mcp__tecton__query_tecton_sdk_reference_tool
+Query for the class StreamFeatureView
+Respond with "YES" if received information about that class. Otherwise respond with an error that explains what happened.
+

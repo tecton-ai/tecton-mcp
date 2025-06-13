@@ -35,6 +35,7 @@ Documentation = "https://docs.tecton.ai"
 
 [project.scripts]
 tecton_mcp = "tecton_mcp.cli:main"
+run-integration-tests = "run_integration_tests:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tecton_mcp"]
@@ -54,6 +55,9 @@ dev-dependencies = [
     "wheel",
     "pre-commit>=3.7.1",
     "pylint>=3.2.6",
+    "pytest>=8.0.0",
+    "pytest-lazy-fixture>=0.6.3",
+    "pyyaml>=6.0",
 ]
 
 [tool.uv.workspace]
