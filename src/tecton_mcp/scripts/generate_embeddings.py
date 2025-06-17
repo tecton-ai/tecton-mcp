@@ -149,9 +149,18 @@ def process_documentation_files(docs_dir: str, base_url: str, output_parquet_pat
 
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
-    examples = pd.read_parquet(os.path.join(FILE_DIR, "data", "examples.parquet")).to_dict(orient="records")
-    build_and_save_example_code_snippet_index(examples, EMBED_MODEL)
     
+    # Build combined examples database (legacy behavior)
+    combined_examples = pd.read_parquet(os.path.join(FILE_DIR, "data", "examples.parquet")).to_dict(orient="records")
+    build_and_save_example_code_snippet_index(combined_examples, EMBED_MODEL, "tecton_examples.db")
+    
+    # Build separate Rift and Spark examples databases
+    rift_examples_path = os.path.join(FILE_DIR, "data", "examples_rift.parquet")
+    build_and_save_example_code_snippet_index(rift_examples_path, EMBED_MODEL, "tecton_examples_rift.db")
+    spark_examples_path = os.path.join(FILE_DIR, "data", "examples_spark.parquet")
+    build_and_save_example_code_snippet_index(spark_examples_path, EMBED_MODEL, "tecton_examples_spark.db")
+
+
     # -------------------------------------------------------------------
     # Generate documentation embeddings for every configured version.
     # -------------------------------------------------------------------
