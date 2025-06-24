@@ -1,4 +1,4 @@
-import json, os, shutil
+import json, os, shutil, re
 from tecton_mcp.tecton_utils import APIGraphBuilder
 from tecton_mcp.tools.example_code_snippet_tools import build_and_save_example_code_snippet_index
 from tecton_mcp.tools.documentation_tools import build_and_save_documentation_index as build_docs_lancedb
@@ -42,11 +42,65 @@ DOC_VERSIONS = [
 ]
 
 
+def _sanitize_internal_links(content: str) -> str:
+    """
+    Sanitize internal markdown links to prevent LLMs from constructing URLs from them.
+    
+    This removes .md file references that could confuse LLMs into creating malformed URLs
+    instead of using the clean Source URLs provided in the metadata.
+    
+    Args:
+        content: The text content that may contain internal .md links
+        
+    Returns:
+        Sanitized content with internal .md links removed or replaced
+    """
+    # Replace [text](path.md) and [text](path.md#anchor) with just the text (no brackets)
+    content = re.sub(r'\[([^\]]+)\]\([^)]*\.md[^)]*\)', r'\1', content)
+    
+    # Handle .md references in quotes, backticks, and other contexts
+    content = re.sub(r'[\'"`]([^\'"`]*\.md[^\'"`]*)[\'"`]', r'the related documentation', content)
+    content = re.sub(r'`([^`]*\.md[^`]*)`', r'the related documentation', content)
+    
+    # Replace standalone .md file references with generic text
+    # Handle common patterns like "file.md," "file.md." "file.md " etc.
+    content = re.sub(r'(\S+\.md)([.,;:!?\s])', r'the related documentation\2', content)
+    content = re.sub(r'(\S+\.md)$', r'the related documentation', content)
+    
+    # Handle .mdx references too
+    content = re.sub(r'(\S+\.mdx)([.,;:!?\s])', r'the related documentation\2', content)
+    content = re.sub(r'(\S+\.mdx)$', r'the related documentation', content)
+    
+    # Clean up any remaining empty brackets that might be left over
+    content = re.sub(r'\[\s*\]', '', content)
+    
+    # Clean up double spaces and punctuation issues
+    content = re.sub(r'\s+', ' ', content)  # Multiple spaces to single space
+    
+    # Note: We avoid aggressive punctuation cleanup to preserve code examples
+    # Patterns like ", ." or ".." in code blocks are valid syntax
+    
+    return content.strip()
+
+
 def generate_doc_url(file_path: str, docs_root_path: str, base_url: str) -> str:
-    """Generates the website URL for a given documentation file path."""
+    """Generates the website URL for a given documentation file path.
+    
+    Handles deduplication when filename matches the parent directory name.
+    For example:
+    - 'testing-features/testing-features.md' -> 'testing-features/'
+    - 'stream-feature-view/stream-feature-view.md' -> 'stream-feature-view/'
+    """
     relative_path = os.path.relpath(file_path, docs_root_path)
     if relative_path.endswith(".md"):
         relative_path = relative_path[:-3]
+    
+    # Handle duplication: if filename matches the parent directory name, remove the filename
+    path_parts = relative_path.split('/')
+    if len(path_parts) >= 2 and path_parts[-1] == path_parts[-2]:
+        # Remove the duplicated filename, keep the directory path
+        relative_path = '/'.join(path_parts[:-1])
+    
     # Ensure no leading slash for joining with base_url
     return base_url + relative_path.lstrip('/')
 
@@ -82,10 +136,12 @@ def process_documentation_files(docs_dir: str, base_url: str, output_parquet_pat
                         text_to_embed = text_to_embed.strip()
 
                         if text_to_embed: 
-                            word_length = len(text_to_embed.split())
+                            # Sanitize internal .md links before saving to parquet
+                            sanitized_text = _sanitize_internal_links(text_to_embed)
+                            word_length = len(sanitized_text.split())
                             if word_length >= 10:
                                 processed_chunks_for_file.append({
-                                    "text_chunk": text_to_embed,
+                                    "text_chunk": sanitized_text,
                                     "header": header_text.strip() if header_text else "N/A", 
                                     "url": file_url,
                                     "source_file": source_path,
