@@ -46,39 +46,37 @@ def _sanitize_internal_links(content: str) -> str:
     """
     Sanitize internal markdown links to prevent LLMs from constructing URLs from them.
     
-    This removes .md file references that could confuse LLMs into creating malformed URLs
-    instead of using the clean Source URLs provided in the metadata.
+    This removes all internal documentation references including:
+    - .md/.mdx file references
+    - Relative path links (../path, ./path)
+    - Internal section anchors (#section)
+    - Asset links (images, etc.)
+    
+    External links (http://, https://) are preserved as they provide valuable context.
     
     Args:
-        content: The text content that may contain internal .md links
+        content: The text content that may contain internal links
         
     Returns:
-        Sanitized content with internal .md links removed or replaced
+        Sanitized content with internal links removed or replaced, preserving link text
     """
-    # Replace [text](path.md) and [text](path.md#anchor) with just the text (no brackets)
-    content = re.sub(r'\[([^\]]+)\]\([^)]*\.md[^)]*\)', r'\1', content)
+    # 1. Handle relative path links: [text](../path), [text](./path)
+    content = re.sub(r'\[([^\]]+)\]\((\.\./[^)]*|\.\/[^)]*)\)', r'\1', content)
     
-    # Handle .md references in quotes, backticks, and other contexts
-    content = re.sub(r'[\'"`]([^\'"`]*\.md[^\'"`]*)[\'"`]', r'the related documentation', content)
-    content = re.sub(r'`([^`]*\.md[^`]*)`', r'the related documentation', content)
+    # 2. Handle internal paths that are not external URLs: [text](path)
+    # Use negative lookahead to exclude http/https links
+    content = re.sub(r'\[([^\]]+)\]\((?!https?://)([^)]*)\)', r'\1', content)
     
-    # Replace standalone .md file references with generic text
-    # Handle common patterns like "file.md," "file.md." "file.md " etc.
-    content = re.sub(r'(\S+\.md)([.,;:!?\s])', r'the related documentation\2', content)
-    content = re.sub(r'(\S+\.md)$', r'the related documentation', content)
+    # 3. Handle standalone .md/.mdx references in quotes, backticks, etc.
+    content = re.sub(r'[\'"`]([^\'"`]*\.mdx?[^\'"`]*)[\'"`]', r'the related documentation', content)
+    content = re.sub(r'`([^`]*\.mdx?[^`]*)`', r'the related documentation', content)
     
-    # Handle .mdx references too
-    content = re.sub(r'(\S+\.mdx)([.,;:!?\s])', r'the related documentation\2', content)
-    content = re.sub(r'(\S+\.mdx)$', r'the related documentation', content)
+    # 4. Replace standalone .md/.mdx file references with generic text
+    content = re.sub(r'(\S+\.mdx?)([.,;:!?\s])', r'the related documentation\2', content)
+    content = re.sub(r'(\S+\.mdx?)$', r'the related documentation', content)
     
-    # Clean up any remaining empty brackets that might be left over
+    # 5. Clean up any remaining empty brackets
     content = re.sub(r'\[\s*\]', '', content)
-    
-    # Clean up double spaces and punctuation issues
-    content = re.sub(r'\s+', ' ', content)  # Multiple spaces to single space
-    
-    # Note: We avoid aggressive punctuation cleanup to preserve code examples
-    # Patterns like ", ." or ".." in code blocks are valid syntax
     
     return content.strip()
 
