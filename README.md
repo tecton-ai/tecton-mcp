@@ -153,8 +153,7 @@ To update the Tecton MCP server to the latest version:
    git pull
    ```
 
-2. **Restart Cursor** to ensure the updated MCP server is loaded:
-   - Close and restart Cursor
+2. **Close and restart Cursor** to ensure the updated MCP server is loaded.
 
 That's it! The MCP server runs as a subprocess spawned by Cursor, so there's no persistent background service to manually stop or restart. Cursor will automatically use the updated code the next time it needs to communicate with the MCP server.
 
