@@ -11,6 +11,7 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 - [Tecton MCP Tools](#tecton-mcp-tools)
 - [Architecture](#architecture)
 - [Setup Tecton with Cursor](#setup-tecton-with-cursor)
+- [Updating the Tecton MCP Server](#updating-the-tecton-mcp-server)
 - [How to Use Specific Tecton SDK Version](#how-to-use-specific-tecton-sdk-version)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
@@ -141,6 +142,21 @@ If no calls are made to Tecton MCP tools, you may need to restart Cursor or relo
 Now you can go to your **Feature Repository** in Cursor and start using Tecton's Co-Pilot - directly integrated in Cursor.
 
 View this Loom to see how you can use the integration to build new features: https://www.loom.com/share/3658f665668a41d2b0ea2355b433c616
+
+## Updating the Tecton MCP Server
+
+To update the Tecton MCP server to the latest version:
+
+1. **Pull the latest changes** from the repository:
+   ```bash
+   cd <path-to-your-local-clone>
+   git pull
+   ```
+
+2. **Restart Cursor** to ensure the updated MCP server is loaded:
+   - Close and restart Cursor
+
+That's it! The MCP server runs as a subprocess spawned by Cursor, so there's no persistent background service to manually stop or restart. Cursor will automatically use the updated code the next time it needs to communicate with the MCP server.
 
 ## How to Use Specific Tecton SDK Version
 
