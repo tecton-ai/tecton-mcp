@@ -5,6 +5,7 @@ from tecton_mcp.tools.documentation_tools import build_and_save_documentation_in
 from tecton_mcp.embed.meta import write_metadata, DATA_DIR
 from tecton_mcp.constants import FILE_DIR
 from tecton_mcp.embed import VectorDB
+from tecton_mcp.utils.repo_utils import DirectoryConfig, DirectoryType
 import tecton
 import pandas as pd
 
@@ -21,21 +22,33 @@ DOC_VERSIONS = [
     {
         "name": "latest",  # corresponds to >1.1.x (default / beta)
         "db_filename": "tecton_docs.db",
-        "docs_path": os.path.expanduser("~/git/tecton-docs/docs"),
+        "directory_config": DirectoryConfig(
+            DirectoryType.DOCS,
+            remote_url="https://github.com/tecton-ai/tecton-docs.git",
+            sub_dir="docs"
+        ),
         "base_url": "https://docs.tecton.ai/docs/beta/",
         "chunks_filename": "documentation_chunks.parquet",
     },
     {
         "name": "1.1",
         "db_filename": "tecton_docs_1.1.db",
-        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.1"),
+        "directory_config": DirectoryConfig(
+            DirectoryType.DOCS,
+            remote_url="https://github.com/tecton-ai/tecton-docs.git",
+            sub_dir="versioned_docs/version-1.1"
+        ),
         "base_url": "https://docs.tecton.ai/docs/",
         "chunks_filename": "documentation_1_1_chunks.parquet",
     },
     {
         "name": "1.0",
         "db_filename": "tecton_docs_1.0.db",
-        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.0"),
+        "directory_config": DirectoryConfig(
+            DirectoryType.DOCS,
+            remote_url="https://github.com/tecton-ai/tecton-docs.git",
+            sub_dir="versioned_docs/version-1.0"
+        ),
         "base_url": "https://docs.tecton.ai/docs/1.0/",
         "chunks_filename": "documentation_1_0_chunks.parquet",
     },
@@ -157,16 +170,23 @@ def main():
     # -------------------------------------------------------------------
 
     for cfg in DOC_VERSIONS:
-        docs_path = cfg["docs_path"]
+        directory_config = cfg["directory_config"]
+        docs_path = directory_config.resolve_path()
         base_url = cfg["base_url"]
         target_db_path = os.path.join(FILE_DIR, "data", cfg["db_filename"])
 
         print("\n==============================")
         print(f"Processing docs version: {cfg['name']}")
-        print(f"Docs path   : {docs_path}")
+        print(f"Remote URL  : {directory_config.remote_url}")
+        print(f"Sub dir     : {directory_config.sub_dir}")
+        print(f"Resolved path: {docs_path}")
         print(f"Base URL    : {base_url}")
         print(f"Output DB   : {target_db_path}")
         print("==============================\n")
+
+        if not docs_path or not os.path.exists(docs_path):
+            print(f"Warning: Documentation path {docs_path} could not be resolved or doesn't exist. Skipping {cfg['name']}...")
+            continue
 
         # Use the explicitly configured Parquet filename for this docs version.
         chunks_file_path = os.path.join(FILE_DIR, "data", cfg["chunks_filename"])

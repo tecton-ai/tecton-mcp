@@ -13,29 +13,18 @@ separate parquet files:
 """
 
 import os
-import re
 import json
+from typing import List, Dict, Any, Tuple
+
 import pandas as pd
 import tqdm
-from typing import List, Dict, Any, Tuple
-from pydantic import BaseModel, Field
 from openai import OpenAI
-from pathlib import Path
-from enum import Enum
 
 # Initialize OpenAI client
 client = OpenAI()
 
-
-class DirectoryType(Enum):
-    RIFT = "rift"
-    SPARK = "spark"
-
-
-class DirectoryConfig:
-    def __init__(self, path: str, directory_type: DirectoryType):
-        self.path = os.path.expanduser(path)
-        self.type = directory_type
+# Import shared repository utilities
+from tecton_mcp.utils.repo_utils import DirectoryConfig, DirectoryType
 
 
 def get_py_files(directory: str) -> List[str]:
@@ -281,12 +270,13 @@ def extract_declarations(directory_configs: List[DirectoryConfig]) -> List[Dict[
     files_with_types = []
     
     for config in directory_configs:
-        if os.path.exists(config.path):
-            folder_files = get_py_files(config.path)
+        resolved_path = config.resolve_path()
+        if resolved_path and os.path.exists(resolved_path):
+            folder_files = get_py_files(resolved_path)
             for file_path in folder_files:
-                files_with_types.append((file_path, config.type))
+                files_with_types.append((file_path, config.directory_type))
         else:
-            print(f"Warning: Directory {config.path} does not exist, skipping...")
+            print(f"Warning: Directory {config.remote_url}/{config.sub_dir} could not be resolved, skipping…")
     
     print(f"Found {len(files_with_types)} Python files to process")
     
@@ -321,14 +311,34 @@ def main():
     """Main function to generate examples parquet files."""
     # Define the directories to process with their types
     directory_configs = [
-        DirectoryConfig("~/git/tecton-sample-repo/rift", DirectoryType.RIFT),
-        DirectoryConfig("~/git/examples/Snowflake", DirectoryType.RIFT),
-        DirectoryConfig("~/git/examples/Spark", DirectoryType.SPARK),
-        DirectoryConfig("~/git/tecton-sample-repo/spark", DirectoryType.SPARK),
+        # Directories from tecton-sample-repo
+        DirectoryConfig(
+            DirectoryType.RIFT,
+            remote_url="https://github.com/tecton-ai/tecton-sample-repo.git",
+            sub_dir="rift",
+        ),
+        DirectoryConfig(
+            DirectoryType.SPARK,
+            remote_url="https://github.com/tecton-ai/tecton-sample-repo.git",
+            sub_dir="spark",
+        ),
+
+        # Directories from tecton-ai/examples
+        DirectoryConfig(
+            DirectoryType.RIFT,
+            remote_url="https://github.com/tecton-ai/examples.git",
+            sub_dir="Snowflake",
+        ),
+        DirectoryConfig(
+            DirectoryType.SPARK,
+            remote_url="https://github.com/tecton-ai/examples.git",
+            sub_dir="Spark",
+        ),
     ]
     
     print("Starting extraction of Tecton declarations...")
-    print(f"Processing directories: {[config.path for config in directory_configs]}")
+    dir_labels = [f"{cfg.remote_url}/{cfg.sub_dir}" for cfg in directory_configs]
+    print(f"Processing directories: {dir_labels}")
     
     # Extract all declarations with type information
     all_declarations = extract_declarations(directory_configs)

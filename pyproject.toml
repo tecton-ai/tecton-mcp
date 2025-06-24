@@ -18,7 +18,8 @@ dependencies = [
     "debugpy>=1.8.11",
     "pyarrow==15.0.2",
     "tecton>=0.8.0a0",
-    "tecton-client"
+    "tecton-client",
+    "gitpython>=3.1"
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
