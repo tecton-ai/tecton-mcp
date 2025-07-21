@@ -18,6 +18,7 @@ from tecton_mcp.tools.documentation_tools import load_documentation_index
 from tecton_mcp.tools.feature_service_tool_library import (
     register_tecton_feature_service_as_tools,
 )
+from tecton_mcp.tools.metrics_api_tools import register_metrics_api_tool
 from tecton_mcp.embed.meta import get_embedding_model
 from tecton_mcp.utils.sdk_introspector import get_sdk_definitions
 from tecton._internals.sdk_decorators import sdk_public_method
@@ -237,14 +238,20 @@ mcp.add_tool(
 import tecton
 from tecton._internals.utils import cluster_url
 
-# Only register FeatureServices as tools if TECTON_API_KEY is set
+# Only register API-based tools if TECTON_API_KEY is set
 if os.environ.get("TECTON_API_KEY"):
     current_workspace = tecton.get_current_workspace()
     tecton_cluster_url = cluster_url()
+    
+    # Register Feature Services
     register_tecton_feature_service_as_tools(current_workspace, mcp, tecton_cluster_url)
     logger.info("FeatureServices registered as tools")
+    
+    # Register Metrics API tool
+    register_metrics_api_tool(mcp, tecton_cluster_url)
+    logger.info("Metrics API tool registered")
 else:
-    logger.warning("No TECTON_API_KEY found - FeatureServices will not be registered as tools")
+    logger.warning("No TECTON_API_KEY found - API-based tools will not be registered")
 
 logger.info("Tecton MCP Server initialized")
 
