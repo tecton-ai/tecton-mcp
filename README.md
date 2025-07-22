@@ -27,9 +27,8 @@ The Tecton MCP server exposes the following tools that can be used by an MCP cli
 | `query_documentation_index_tool`        | Retrieves Tecton documentation snippets based on a query. Provides context directly from Tecton's official documentation.       |
 | `get_full_tecton_sdk_reference_tool`    | Fetches the complete Tecton SDK reference, including all available classes and functions. Use when a broad overview of the SDK is needed. |
 | `query_tecton_sdk_reference_tool`       | Fetches the Tecton SDK reference for a specified list of classes or functions. Ideal for targeted information on specific SDK components.   |
-
-> ℹ️ **Feature Services**: If the MCP server is configured with a `TECTON_API_KEY` environment variable, the MCP server will register Tecton Feature Services as tools. This makes it possible for agents to query online feature services for fresh features from batch, streaming and real-time data sources.
-
+| `query_tecton_metrics_tool`             | Queries the Tecton Metrics API. Returns point-in-time system metrics in human-readable or raw OpenMetrics format. |
+> ℹ️ **API-based Tools**: If the MCP server is configured with a `TECTON_API_KEY` environment variable, the MCP server will register additional API-based tools including Tecton Feature Services and the Metrics API tool. This makes it possible for agents to query online feature services for fresh features from batch, streaming and real-time data sources and access system metrics.
 ## Prerequisites
 
 1. Install the `uv` package manager:
