@@ -1,6 +1,6 @@
 # Tecton MCP Server & Cursor Rules
 
-Tecton's Co-Pilot consists of an MCP Server and Cursor rules.
+Tecton's Co-Pilot consists of an MCP Server rules for MCP clients such as Cursor and Claude Code.
 Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 
 > ℹ️ **Info**: This guide will walk you through setting up the Tecton MCP server with **this repository** and configuring your **feature repository** to use it while developing features with Tecton.
