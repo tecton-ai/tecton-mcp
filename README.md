@@ -180,7 +180,7 @@ Navigate to Augment -> Settings -> Tools -> MCP -> Import from JSON, and import 
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/rkitaoka/mcp-demo/tecton-mcp",
+        "<path-to-local-clone>",
         "run",
         "mcp",
         "run",
