@@ -1,0 +1,3 @@
+Call the tecton mcp server tool mcp__tecton__diagnose_tecton_environment_tool
+Run the diagnostic tool to check the Tecton environment configuration.
+Respond with "YES" if the tool executed successfully and provided environment diagnostics. Otherwise respond with an error that explains what happened. 

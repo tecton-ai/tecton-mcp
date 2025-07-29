@@ -7,9 +7,11 @@ import json
 import logging
 import os
 import sys
+import re
+import subprocess
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator, List, Callable, Any, Dict, Set
+from typing import AsyncIterator, List, Callable, Any, Dict, Set, Optional
 from importlib.metadata import version, PackageNotFoundError
 
 from tecton_mcp.tools.api_reference_tools import get_full_sdk_reference
@@ -251,4 +253,187 @@ logger.info("Tecton MCP Server initialized")
 if os.environ.get("MCP_SMOKE_TEST"):
     logger.info("MCP_SMOKE_TEST is set. Exiting after initialization.")
     raise SystemExit(0)
+
+def _get_local_tecton_version() -> Optional[str]:
+    """Get the Tecton version from the local workspace environment (not the MCP server environment)."""
+    try:
+        # Try to get version via tecton version command
+        result = subprocess.run(
+            ["tecton", "version", "--output", "json"], 
+            capture_output=True, 
+            text=True, 
+            timeout=10
+        )
+        if result.returncode == 0:
+            try:
+                version_info = json.loads(result.stdout)
+                return version_info.get("tecton_sdk_version")
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
+        # Fallback: try to get version via Python import in a subprocess
+        result = subprocess.run([
+            sys.executable, "-c", 
+            "import tecton; print(getattr(tecton, '__version__', 'unknown'))"
+        ], capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            return result.stdout.strip()
+            
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    return None
+
+def _get_mcp_server_tecton_version() -> Optional[str]:
+    """Get the Tecton version used by the MCP server."""
+    try:
+        import tecton
+        return getattr(tecton, "__version__", None)
+    except ImportError:
+        return None
+
+def _parse_version(version_str: str) -> Optional[tuple]:
+    """Parse version string into comparable tuple (major, minor, patch)."""
+    if not version_str:
+        return None
+    
+    # Extract major.minor.patch from version strings like "1.1.0", "1.2.0b12", "1.0.3rc1"
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_str)
+    if match:
+        return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    return None
+
+def _get_workspace_info() -> Dict[str, Any]:
+    """Get current workspace and cluster information."""
+    try:
+        import tecton
+        from tecton._internals.utils import cluster_url
+        
+        workspace = tecton.get_current_workspace()
+        cluster = cluster_url()
+        
+        return {
+            "workspace": workspace,
+            "cluster": cluster,
+            "logged_in": True
+        }
+    except Exception as e:
+        return {
+            "workspace": None,
+            "cluster": None, 
+            "logged_in": False,
+            "error": str(e)
+        }
+
+@mcp.tool()
+@sdk_public_method
+def diagnose_tecton_environment_tool(ctx: Context) -> str:
+    """
+    Diagnoses the Tecton environment and checks for version mismatches between 
+    the MCP server and local workspace/cluster environment.
+    
+    This tool helps identify configuration issues such as:
+    - Version mismatches between MCP server and local environment
+    - Authentication/login status
+    - Current workspace and cluster information
+    - Recommendations for fixing configuration issues
+    
+    Use this tool when users report issues or when you want to verify the 
+    environment is properly configured.
+    """
+    ctx.info("Running Tecton environment diagnostics...")
+    
+    # Get version information
+    mcp_version = _get_mcp_server_tecton_version()
+    local_version = _get_local_tecton_version()
+    workspace_info = _get_workspace_info()
+    
+    # Parse versions for comparison
+    mcp_parsed = _parse_version(mcp_version) if mcp_version else None
+    local_parsed = _parse_version(local_version) if local_version else None
+    
+    # Build diagnostic report
+    report = []
+    report.append("=== Tecton Environment Diagnostics ===\n")
+    
+    # Version information
+    report.append("📋 VERSION INFORMATION:")
+    report.append(f"• MCP Server Tecton Version: {mcp_version or 'Unknown'}")
+    report.append(f"• Local Environment Tecton Version: {local_version or 'Unable to detect'}")
+    
+    # Version compatibility check
+    version_status = "✅ OK"
+    version_advice = ""
+    
+    if not mcp_version:
+        version_status = "❌ ERROR"
+        version_advice = "MCP server Tecton version could not be determined"
+    elif not local_version:
+        version_status = "⚠️  WARNING"
+        version_advice = "Local Tecton version could not be detected. Ensure Tecton is installed and accessible."
+    elif mcp_version != local_version:
+        if mcp_parsed and local_parsed:
+            # Check if major.minor versions match (patch differences are usually OK)
+            if mcp_parsed[:2] != local_parsed[:2]:
+                version_status = "❌ MISMATCH"
+                version_advice = f"Version mismatch detected! MCP server uses {mcp_version}, but local environment uses {local_version}."
+            else:
+                version_status = "⚠️  MINOR DIFF"
+                version_advice = f"Minor version difference detected (MCP: {mcp_version}, Local: {local_version}). This should be OK but may cause minor inconsistencies."
+        else:
+            version_status = "⚠️  DIFFERENT"
+            version_advice = f"Version difference detected (MCP: {mcp_version}, Local: {local_version})"
+    
+    report.append(f"• Version Status: {version_status}")
+    if version_advice:
+        report.append(f"• Version Analysis: {version_advice}")
+    
+    # Workspace and authentication information
+    report.append("\n🔑 AUTHENTICATION & WORKSPACE:")
+    if workspace_info["logged_in"]:
+        report.append(f"• Authentication Status: ✅ Logged in")
+        report.append(f"• Current Workspace: {workspace_info['workspace']}")
+        report.append(f"• Cluster URL: {workspace_info['cluster']}")
+    else:
+        report.append(f"• Authentication Status: ❌ Not logged in or error")
+        if workspace_info.get("error"):
+            report.append(f"• Error: {workspace_info['error']}")
+    
+    # Recommendations section
+    report.append("\n💡 RECOMMENDATIONS:")
+    
+    if version_status.startswith("❌"):
+        report.append("🔧 VERSION MISMATCH DETECTED:")
+        report.append("   To fix version mismatches, follow these steps:")
+        report.append("   1. Update your MCP server configuration to match your local Tecton version")
+        report.append(f"   2. Edit your pyproject.toml to pin Tecton to version {local_version}:")
+        report.append("      ```toml")
+        report.append("      dependencies = [")
+        report.append(f'          "tecton=={local_version}"')
+        report.append("      ]")
+        report.append("      ```")
+        report.append("   3. Remove the existing lock file: `rm uv.lock`")
+        report.append("   4. Test the configuration: `MCP_SMOKE_TEST=1 uv run mcp run src/tecton_mcp/mcp_server/server.py`")
+        report.append("   5. Restart Cursor to load the updated MCP server")
+        report.append("   📖 For detailed instructions, see the 'How to Use Specific Tecton SDK Version' section in the README")
+    
+    if not workspace_info["logged_in"]:
+        report.append("🔧 AUTHENTICATION REQUIRED:")
+        report.append("   • Run `tecton login yourcluster.tecton.ai` to authenticate")
+        report.append("   • Verify your workspace with `tecton workspace list`")
+        report.append("   • Select appropriate workspace with `tecton workspace select <name>`")
+    
+    if version_status == "✅ OK" and workspace_info["logged_in"]:
+        report.append("✅ Environment looks good! No issues detected.")
+        report.append("   • Versions are compatible")
+        report.append("   • Authentication is working")
+        report.append("   • Ready for feature development")
+    
+    report.append("\n🆘 TROUBLESHOOTING:")
+    report.append("   • If issues persist, run MCP server in diagnostics mode:")
+    report.append("     `uv run mcp dev src/tecton_mcp/mcp_server/server.py`")
+    report.append("   • Check the README troubleshooting section for more help")
+    
+    return "\n".join(report)
 

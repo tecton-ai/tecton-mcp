@@ -63,6 +63,7 @@ The Tecton MCP server exposes the following tools that can be used by an MCP cli
 | `query_documentation_index_tool`        | Retrieves Tecton documentation snippets based on a query. Provides context directly from Tecton's official documentation.       |
 | `get_full_tecton_sdk_reference_tool`    | Fetches the complete Tecton SDK reference, including all available classes and functions. Use when a broad overview of the SDK is needed. |
 | `query_tecton_sdk_reference_tool`       | Fetches the Tecton SDK reference for a specified list of classes or functions. Ideal for targeted information on specific SDK components.   |
+| `diagnose_tecton_environment_tool`      | Diagnoses the Tecton environment and checks for version mismatches between the MCP server and local workspace. Provides setup recommendations. |
 
 > ℹ️ **Feature Services**: If the MCP server is configured with a `TECTON_API_KEY` environment variable, the MCP server will register Tecton Feature Services as tools. This makes it possible for agents to query online feature services for fresh features from batch, streaming and real-time data sources.
 
@@ -136,6 +137,23 @@ To make sure that your integration works as expected, ask the Cursor Agent a que
 > Query Tecton's Examples Index and tell me something about BatchFeatureViews and how they differ from StreamFeatureViews. Also look at the SDK Reference.
 
 If no calls are made to Tecton MCP tools, you may need to restart Cursor or reload your Cursor window to ensure new tools are properly registered.
+
+### Diagnosing Your Environment
+
+The Tecton MCP Server includes a diagnostic tool that automatically checks for common configuration issues and version mismatches. To run diagnostics, ask the Cursor Agent:
+
+> Use the Tecton diagnostics tool to check my environment setup and let me know if there are any version mismatches or configuration issues.
+
+The diagnostic tool will:
+- Compare Tecton versions between your MCP server and local environment
+- Check authentication status and current workspace
+- Provide specific recommendations for fixing any detected issues
+- Guide you through version alignment if mismatches are found
+
+This is especially useful when:
+- Setting up the MCP server for the first time
+- Troubleshooting unexpected behavior
+- Ensuring version compatibility after updates
 
 ### Start AI-Assisted Feature Engineering :-)
 

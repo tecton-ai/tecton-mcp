@@ -31,6 +31,7 @@ class TestConfig:
                 "mcp__tecton__query_documentation_index_tool",
                 "mcp__tecton__query_tecton_sdk_reference_tool",
                 "mcp__tecton__get_full_tecton_sdk_reference_tool",
+                "mcp__tecton__diagnose_tecton_environment_tool",
                 "Bash(tecton test:*)"
             ]
     

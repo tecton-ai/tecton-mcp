@@ -1,0 +1,4 @@
+name: "basic_diagnose_tecton_environment_tool_test"
+type: "simple"  # This is a simple test, no workspace/repo setup needed
+description: "Test the diagnose_tecton_environment_tool MCP tool"
+expected_score_threshold: 70 
