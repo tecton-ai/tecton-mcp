@@ -11,7 +11,7 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 - [Quick Start](#quick-start)
 - [Setup Tecton with Cursor](#setup-tecton-mcp-with-cursor)
 - [Setup Tecton with Claude Code](#setup-tecton-mcp-with-claude-code)
-- [Setup Tecton with Augment](#)
+- [Setup Tecton with Augment](#setup-tecton-mcp-with-augment)
 - [Architecture](#architecture)
 - [How to Update the Tecton MCP Server](#how-to-update-the-tecton-mcp-server)
 - [How to Use Specific Tecton SDK Version](#how-to-use-specific-tecton-sdk-version)
