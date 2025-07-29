@@ -19,17 +19,24 @@ EMBED_MODEL = "sentence-transformers/multi-qa-MiniLM-L6-cos-v1"
 
 DOC_VERSIONS = [
     {
-        "name": "latest",  # corresponds to >1.1.x (default / beta)
+        "name": "latest",  # corresponds to latest beta/unreleased version
         "db_filename": "tecton_docs.db",
         "docs_path": os.path.expanduser("~/git/tecton-docs/docs"),
         "base_url": "https://docs.tecton.ai/docs/beta/",
         "chunks_filename": "documentation_chunks.parquet",
     },
     {
+        "name": "1.2",
+        "db_filename": "tecton_docs_1.2.db",
+        "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.2"),
+        "base_url": "https://docs.tecton.ai/docs/",
+        "chunks_filename": "documentation_1_2_chunks.parquet",
+    },
+    {
         "name": "1.1",
         "db_filename": "tecton_docs_1.1.db",
         "docs_path": os.path.expanduser("~/git/tecton-docs/versioned_docs/version-1.1"),
-        "base_url": "https://docs.tecton.ai/docs/",
+        "base_url": "https://docs.tecton.ai/docs/1.1/",
         "chunks_filename": "documentation_1_1_chunks.parquet",
     },
     {
