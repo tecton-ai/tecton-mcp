@@ -11,6 +11,7 @@ Read this [blog](https://medium.com/p/252221865d26) to learn much more.
 - [Quick Start](#quick-start)
 - [Setup Tecton with Cursor](#setup-tecton-mcp-with-cursor)
 - [Setup Tecton with Claude Code](#setup-tecton-mcp-with-claude-code)
+- [Setup Tecton with Augment](#)
 - [Architecture](#architecture)
 - [How to Update the Tecton MCP Server](#how-to-update-the-tecton-mcp-server)
 - [How to Use Specific Tecton SDK Version](#how-to-use-specific-tecton-sdk-version)
@@ -159,7 +160,42 @@ Symlink the Tecton-recommended [`CLAUDE.md`](https://github.com/tecton-ai/tecton
 ```bash
 ln -s <path-to-local-clone>/CLAUDE.md <path-to-tecton-feature-repo>/CLAUDE.md
 ```
+## Setup Tecton MCP with Augment 
 
+You can connect Tecton's MCP server to Augment to enable intelligent completion and responses tailored to Tecton's internal codebase.
+
+### Prerequisits
+- You have this repository cloned locally.
+- You have an IDE with augment installed (e.g., PyChamrm,VSCode)
+- You are using latest version of Augment
+
+### Configuration 
+
+Navigate to Augment -> Settings -> Tools -> MCP -> Import from JSON, and import the following configuration(updating `<path-to-local-clone>` to the path where you cloned this repository):
+
+```json
+{
+  "mcpServers": {
+    "tecton": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/rkitaoka/mcp-demo/tecton-mcp",
+        "run",
+        "mcp",
+        "run",
+        "src/tecton_mcp/mcp_server/server.py"
+      ]
+    }
+  }
+}
+```
+You should see the MCP server appear in Augment MCP settings.
+
+### Verify your Connection
+- Restart your IDE.
+- Ask a Tecton-specific quesiton in Augment
+- You should see completions and responses from Tecton's MCP server.
 ## Recommended LLMs
 
 As of June 2025, the following is the stack ranked list of best performing Tecton feature engineering LLMs in Cursor; this list may evolve over time as new models are released:
