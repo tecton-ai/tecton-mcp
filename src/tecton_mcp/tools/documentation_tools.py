@@ -10,9 +10,8 @@ from tecton_mcp.embed.meta import get_embedding_model
 # Dynamically resolve the correct documentation DB based on installed Tecton
 # version. Multiple DB files (e.g. `tecton_docs_1.1.db`, `tecton_docs_1.0.db`) 
 # may coexist under `{FILE_DIR}/data`.  The mapping rules are:
-#   - Version > 1.1.x  -> `tecton_docs.db`   (default / latest)
-#   - Version 1.1.x    -> `tecton_docs_1.1.db`
-#   - Version 1.0.x -> `tecton_docs_1.0.db`
+#   - Latest  -> `tecton_docs.db`   (default / latest)
+#   - Version 1.x.y    -> `tecton_docs_1.x.db`
 #   - Anything else / unknown -> fall back to the default (`tecton_docs.db`).
 # ---------------------------------------------------------------------------
 
@@ -40,11 +39,12 @@ def _resolve_docs_db_path() -> str:
         if match:
             major, minor = int(match.group(1)), int(match.group(2))
 
-            if major == 1 and minor == 1:
+            if major == 1 and minor == 2:
+                db_filename = "tecton_docs_1.2.db"
+            elif major == 1 and minor == 1:
                 db_filename = "tecton_docs_1.1.db"
             elif (major == 1 and minor == 0):
                 db_filename = "tecton_docs_1.0.db"
-            # Versions >1.1 keep the default, which points to the latest docs.
 
     resolved_path = os.path.join(FILE_DIR, "data", db_filename)
     return resolved_path
