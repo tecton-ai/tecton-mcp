@@ -128,7 +128,7 @@ claude mcp add-json tecton-mcp '{
   "command": "uv",
   "args": [
     "--directory",
-    "/Users/ravi/Tecton/tecton-mcp",
+    "<path-to-local-clone>",
     "run",
     "mcp",
     "run",
